@@ -15,6 +15,9 @@ pygame.display.set_caption("2D Car Game")
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+GREY = (50, 50, 50)
 
 # Fonts
 font = pygame.font.Font(None, 36)
@@ -40,13 +43,28 @@ def draw_text(text, x, y):
     text_surface = font.render(text, True, BLACK)
     screen.blit(text_surface, (x, y))
 
-def draw_car(x, y, color):
+def draw_car(x, y, car_type):
+    if car_type == "ferrari":
+        color = RED
+    elif car_type == "porsche":
+        color = GREEN
+    elif car_type == "lambo":
+        color = BLUE
+    elif car_type == "enemy":
+        color = BLACK
     pygame.draw.rect(screen, color, [x, y, player_car_width, player_car_height])
 
+def draw_road():
+    screen.fill(GREY)
+    pygame.draw.line(screen, WHITE, (SCREEN_WIDTH // 2, 0), (SCREEN_WIDTH // 2, SCREEN_HEIGHT), 5)
+
 def create_enemy_car():
-    x = random.randint(0, SCREEN_WIDTH - enemy_car_width)
-    y = -enemy_car_height
-    return [x, y]
+    while True:
+        x = random.randint(0, SCREEN_WIDTH - enemy_car_width)
+        y = -enemy_car_height
+        new_car = [x, y]
+        if not any(abs(new_car[0] - car[0]) < enemy_car_width and abs(new_car[1] - car[1]) < enemy_car_height for car in enemy_cars):
+            return new_car
 
 def main():
     global selected_car, player_car_x, player_car_y
@@ -54,20 +72,19 @@ def main():
     clock = pygame.time.Clock()
 
     while running:
-        screen.fill(WHITE)
-
-        # Draw car options
-        for i, car in enumerate(car_options):
-            draw_text(f"{i + 1}. {car.capitalize()}", 50, 50 + i * 50)
-
-        if selected_car:
-            draw_text(f"Selected Car: {selected_car.drive()}", 50, 300)
-            draw_car(player_car_x, player_car_y, RED)
+        if not selected_car:
+            screen.fill(WHITE)
+            # Draw car options
+            for i, car in enumerate(car_options):
+                draw_text(f"{i + 1}. {car.capitalize()}", 50, 50 + i * 50)
+        else:
+            draw_road()
+            draw_car(player_car_x, player_car_y, selected_car.__class__.__name__.lower())
 
             # Move enemy cars
             for enemy_car in enemy_cars:
                 enemy_car[1] += enemy_car_speed
-                draw_car(enemy_car[0], enemy_car[1], BLACK)
+                draw_car(enemy_car[0], enemy_car[1], "enemy")
 
                 # Check for collision
                 if (player_car_y < enemy_car[1] + enemy_car_height and
