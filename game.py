@@ -13,9 +13,11 @@ class Game:
         self.player_car_x = SCREEN_WIDTH // 2 - PLAYER_CAR_WIDTH // 2
         self.player_car_y = SCREEN_HEIGHT - PLAYER_CAR_HEIGHT - 10
         self.enemy_cars = []
+        self.coins = []
         self.road_offset = 0
         self.running = True
         self.clock = pygame.time.Clock()
+        self.coin_count = 0
 
     def draw_text(self, text, x, y):
         text_surface = self.font.render(text, True, BLACK)
@@ -45,6 +47,15 @@ class Game:
         x = lane * LANE_WIDTH + (LANE_WIDTH - ENEMY_CAR_WIDTH) // 2
         y = -ENEMY_CAR_HEIGHT
         return [x, y]
+
+    def create_coin(self):
+        lane = random.randint(0, NUM_LANES - 1)
+        x = lane * LANE_WIDTH + (LANE_WIDTH - PLAYER_CAR_WIDTH) // 2
+        y = -PLAYER_CAR_HEIGHT
+        return [x, y]
+
+    def draw_coin(self, x, y):
+        pygame.draw.circle(self.screen, (255, 215, 0), (x + PLAYER_CAR_WIDTH // 2, y + PLAYER_CAR_HEIGHT // 2), PLAYER_CAR_WIDTH // 4)
 
     def run(self):
         while self.running:
@@ -78,6 +89,31 @@ class Game:
                 # Add new enemy cars
                 if random.randint(1, 20) == 1:
                     self.enemy_cars.append(self.create_enemy_car())
+
+                # Move coins
+                for coin in self.coins:
+                    coin[1] += ENEMY_CAR_SPEED
+                    self.draw_coin(coin[0], coin[1])
+
+                    # Check for coin collection
+                    if (self.player_car_y < coin[1] + PLAYER_CAR_HEIGHT // 2 and
+                        self.player_car_y + PLAYER_CAR_HEIGHT > coin[1] and
+                        self.player_car_x < coin[0] + PLAYER_CAR_WIDTH // 2 and
+                        self.player_car_x + PLAYER_CAR_WIDTH > coin[0]):
+                        self.coins.remove(coin)
+                        self.coin_count += 1
+
+                # Remove off-screen coins
+                self.coins[:] = [coin for coin in self.coins if coin[1] < SCREEN_HEIGHT]
+
+                # Add new coins
+                if random.randint(1, 50) == 1:
+                    self.coins.append(self.create_coin())
+
+                # Draw coin count
+                pygame.draw.rect(self.screen, WHITE, [0, 0, 150, 50])
+                pygame.draw.rect(self.screen, BLACK, [0, 0, 150, 50], 2)
+                self.draw_text(f"Coins: {self.coin_count}", 10, 10)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
