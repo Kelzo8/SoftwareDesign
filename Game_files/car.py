@@ -5,14 +5,14 @@ class Car(ABC):
     def drive(self):
         pass
 
-class ferrari(Car):
+class Ferrari(Car):
     def drive(self):
         return "Driving a ferrari"
 
-class porsche(Car):
+class Porsche(Car):
     def drive(self):
         return "Driving an porsche"
 
-class lambo(Car):
+class Lambo(Car):
     def drive(self):
         return "Driving a lambo"

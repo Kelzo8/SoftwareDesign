@@ -1,6 +1,6 @@
 import pygame
 import random
-from car_factory import CarFactory
+from .car_factory import CarFactory
 from settings import *
 
 class Game:
