@@ -1,7 +1,10 @@
+# game.py
 import pygame
 import random
 from .car_factory import CarFactory
 from settings import *
+from .game_state import GameState
+from .command import MoveLeftCommand, MoveRightCommand, MoveUpCommand, MoveDownCommand
 
 class Game:
     def __init__(self):
@@ -15,23 +18,22 @@ class Game:
         self.enemy_cars = []
         self.coins = []
         self.road_offset = 0
-        self.running = True
         self.clock = pygame.time.Clock()
-        self.coin_count = 0
+        self.game_state = GameState()  # Singleton instance
+        self.commands = {
+            pygame.K_LEFT: MoveLeftCommand(),
+            pygame.K_RIGHT: MoveRightCommand(),
+            pygame.K_UP: MoveUpCommand(),
+            pygame.K_DOWN: MoveDownCommand(),
+        }
 
     def draw_text(self, text, x, y):
         text_surface = self.font.render(text, True, BLACK)
         self.screen.blit(text_surface, (x, y))
 
     def draw_car(self, x, y, car_type):
-        if car_type == "ferrari":
-            color = RED
-        elif car_type == "porsche":
-            color = GREEN
-        elif car_type == "lambo":
-            color = BLUE
-        elif car_type == "enemy":
-            color = BLACK
+        color_map = {"ferrari": RED, "porsche": GREEN, "lambo": BLUE, "enemy": BLACK}
+        color = color_map.get(car_type, BLACK)
         pygame.draw.rect(self.screen, color, [x, y, PLAYER_CAR_WIDTH, PLAYER_CAR_HEIGHT])
 
     def draw_road(self):
@@ -39,7 +41,8 @@ class Game:
         for i in range(NUM_LANES + 1):
             lane_x = i * LANE_WIDTH
             for j in range(0, SCREEN_HEIGHT, ROAD_LINE_HEIGHT + ROAD_LINE_GAP):
-                pygame.draw.line(self.screen, WHITE, (lane_x, j + self.road_offset), (lane_x, j + ROAD_LINE_HEIGHT + self.road_offset), 2)
+                pygame.draw.line(self.screen, WHITE, (lane_x, j + self.road_offset), 
+                                 (lane_x, j + ROAD_LINE_HEIGHT + self.road_offset), 2)
         self.road_offset = (self.road_offset + 5) % (ROAD_LINE_HEIGHT + ROAD_LINE_GAP)
 
     def create_enemy_car(self):
@@ -55,13 +58,14 @@ class Game:
         return [x, y]
 
     def draw_coin(self, x, y):
-        pygame.draw.circle(self.screen, (255, 215, 0), (x + PLAYER_CAR_WIDTH // 2, y + PLAYER_CAR_HEIGHT // 2), PLAYER_CAR_WIDTH // 4)
+        pygame.draw.circle(self.screen, (255, 215, 0), (x + PLAYER_CAR_WIDTH // 2, y + PLAYER_CAR_HEIGHT // 2), 
+                           PLAYER_CAR_WIDTH // 4)
 
     def run(self):
-        while self.running:
+        while self.game_state.is_running:
+            self.screen.fill(WHITE)
+
             if not self.selected_car:
-                self.screen.fill(WHITE)
-                # Draw car options
                 for i, car in enumerate(["ferrari", "porsche", "lambo"]):
                     self.draw_text(f"{i + 1}. {car.capitalize()}", 50, 50 + i * 50)
             else:
@@ -81,7 +85,7 @@ class Game:
                         self.draw_text("Game Over!", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2)
                         pygame.display.flip()
                         pygame.time.wait(2000)
-                        self.running = False
+                        self.game_state.stop_game()
 
                 # Remove off-screen enemy cars
                 self.enemy_cars[:] = [car for car in self.enemy_cars if car[1] < SCREEN_HEIGHT]
@@ -101,7 +105,7 @@ class Game:
                         self.player_car_x < coin[0] + PLAYER_CAR_WIDTH // 2 and
                         self.player_car_x + PLAYER_CAR_WIDTH > coin[0]):
                         self.coins.remove(coin)
-                        self.coin_count += 1
+                        self.game_state.add_coin()
 
                 # Remove off-screen coins
                 self.coins[:] = [coin for coin in self.coins if coin[1] < SCREEN_HEIGHT]
@@ -113,11 +117,11 @@ class Game:
                 # Draw coin count
                 pygame.draw.rect(self.screen, WHITE, [0, 0, 150, 50])
                 pygame.draw.rect(self.screen, BLACK, [0, 0, 150, 50], 2)
-                self.draw_text(f"Coins: {self.coin_count}", 10, 10)
+                self.draw_text(f"Coins: {self.game_state.coin_count}", 10, 10)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    self.running = False
+                    self.game_state.stop_game()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_1:
                         self.selected_car = CarFactory.create_car("ferrari")
@@ -128,14 +132,9 @@ class Game:
 
             keys = pygame.key.get_pressed()
             if self.selected_car:
-                if keys[pygame.K_LEFT] and self.player_car_x > 0:
-                    self.player_car_x -= PLAYER_CAR_SPEED
-                if keys[pygame.K_RIGHT] and self.player_car_x < SCREEN_WIDTH - PLAYER_CAR_WIDTH:
-                    self.player_car_x += PLAYER_CAR_SPEED
-                if keys[pygame.K_UP] and self.player_car_y > 0:
-                    self.player_car_y -= PLAYER_CAR_SPEED
-                if keys[pygame.K_DOWN] and self.player_car_y < SCREEN_HEIGHT - PLAYER_CAR_HEIGHT:
-                    self.player_car_y += PLAYER_CAR_SPEED
+                for key, command in self.commands.items():
+                    if keys[key]:
+                        command.execute(self)
 
             pygame.display.flip()
             self.clock.tick(60)
