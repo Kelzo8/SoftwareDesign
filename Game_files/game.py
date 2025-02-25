@@ -1,7 +1,10 @@
+# Game_files/game.py
+
 import pygame
 import random
 from .car_factory import CarFactory
 from settings import *
+from .leaderboard import Leaderboard
 
 class Game:
     def __init__(self):
@@ -18,6 +21,8 @@ class Game:
         self.running = True
         self.clock = pygame.time.Clock()
         self.coin_count = 0
+        self.leaderboard = Leaderboard()
+        self.player_name = "Player1"  # You can modify this to get the player's name dynamically
 
     def draw_text(self, text, x, y):
         text_surface = self.font.render(text, True, BLACK)
@@ -57,6 +62,15 @@ class Game:
     def draw_coin(self, x, y):
         pygame.draw.circle(self.screen, (255, 215, 0), (x + PLAYER_CAR_WIDTH // 2, y + PLAYER_CAR_HEIGHT // 2), PLAYER_CAR_WIDTH // 4)
 
+    def display_leaderboard(self):
+        self.screen.fill(WHITE)
+        self.draw_text("Game Over!", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50)
+        self.draw_text("Leaderboard:", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2)
+        for i, (player_name, score) in enumerate(self.leaderboard.scores[:10], start=1):
+            self.draw_text(f"{i}. {player_name}: {score}", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 30 + i * 30)
+        pygame.display.flip()
+        pygame.time.wait(5000)
+
     def run(self):
         while self.running:
             if not self.selected_car:
@@ -78,9 +92,8 @@ class Game:
                         self.player_car_y + PLAYER_CAR_HEIGHT > enemy_car[1] and
                         self.player_car_x < enemy_car[0] + ENEMY_CAR_WIDTH and
                         self.player_car_x + PLAYER_CAR_WIDTH > enemy_car[0]):
-                        self.draw_text("Game Over!", SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2)
-                        pygame.display.flip()
-                        pygame.time.wait(2000)
+                        self.leaderboard.update(self.player_name, self.coin_count)
+                        self.display_leaderboard()
                         self.running = False
 
                 # Remove off-screen enemy cars
