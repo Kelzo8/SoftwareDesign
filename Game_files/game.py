@@ -5,8 +5,10 @@ import random
 from .car_factory import CarFactory
 from settings import *
 from .game_state import GameState
-from .command import MoveLeftCommand, MoveRightCommand, MoveUpCommand, MoveDownCommand
+from .command import MoveLeftCommand, MoveRightCommand, MoveUpCommand, MoveDownCommand, CheckPointCommand
 from .leaderboard import Leaderboard
+from .memento import Memento
+from .caretaker import Caretaker
 import pygame.locals
 from abc import ABC, abstractmethod
 import json
@@ -70,9 +72,11 @@ class Game:
             pygame.K_RIGHT: MoveRightCommand(),
             pygame.K_UP: MoveUpCommand(),
             pygame.K_DOWN: MoveDownCommand(),
+            pygame.K_s: CheckPointCommand()
         }
         self.leaderboard = Leaderboard()
         self.game_state.attach(self.leaderboard)
+        self.caretaker = Caretaker()
 
     def create_enemy_car(self):
         lane = random.randint(0, NUM_LANES - 1)
@@ -85,6 +89,18 @@ class Game:
         x = lane * LANE_WIDTH + (LANE_WIDTH - PLAYER_CAR_WIDTH) // 2
         y = -PLAYER_CAR_HEIGHT
         return [x, y]
+
+    def save_checkpoint(self):
+        if self.game_state.coin_count >= 5:
+            self.game_state.coin_count -= 5
+            memento = Memento(self.player_car_x, self.player_car_y, self.game_state.coin_count, self.enemy_cars, self.coins)
+            self.caretaker.save_memento(memento)
+
+    def load_checkpoint(self):
+        memento = self.caretaker.get_last_memento()
+        if memento:
+            self.player_car_x, self.player_car_y, self.game_state.coin_count, self.enemy_cars, self.coins = memento.get_state()
+        return memento is not None
 
     def run(self):
         # Add name input before starting the game
@@ -106,7 +122,7 @@ class Game:
                         player_name = player_name[:-1]
                     elif event.unicode.isalnum() or event.unicode.isspace():
                         player_name += event.unicode
-            
+
             pygame.display.flip()
             self.clock.tick(60)
 
@@ -129,16 +145,18 @@ class Game:
                         self.player_car_y + PLAYER_CAR_HEIGHT > enemy_car[1] and
                         self.player_car_x < enemy_car[0] + ENEMY_CAR_WIDTH and
                         self.player_car_x + PLAYER_CAR_WIDTH > enemy_car[0]):
-                        self.game_state.stop_game()
-                        waiting_for_input = True
-                        while waiting_for_input:
-                            self.ui.display_leaderboard(self.leaderboard)
-                            pygame.display.flip()
-                            for event in pygame.event.get():
-                                if event.type == pygame.QUIT:
-                                    waiting_for_input = False
-                                elif event.type == pygame.KEYDOWN:
-                                    waiting_for_input = False
+
+                        if not self.load_checkpoint():
+                            self.game_state.stop_game()
+                            waiting_for_input = True
+                            while waiting_for_input:
+                                self.ui.display_leaderboard(self.leaderboard)
+                                pygame.display.flip()
+                                for event in pygame.event.get():
+                                    if event.type == pygame.QUIT:
+                                        waiting_for_input = False
+                                    elif event.type == pygame.KEYDOWN:
+                                        waiting_for_input = False
 
                 # Remove off-screen enemy cars
                 self.enemy_cars[:] = [car for car in self.enemy_cars if car[1] < SCREEN_HEIGHT]
@@ -180,7 +198,7 @@ class Game:
                         self.selected_car = CarFactory.create_car("porsche")
                     elif event.key == pygame.K_3:
                         self.selected_car = CarFactory.create_car("lambo")
-
+    
             keys = pygame.key.get_pressed()
             if self.selected_car:
                 for key, command in self.commands.items():
