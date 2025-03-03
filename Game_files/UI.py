@@ -185,4 +185,18 @@ class UI:
     def draw_coin_count(self, coin_count):
         pygame.draw.rect(self.screen, WHITE, [0, 0, 150, 50])
         pygame.draw.rect(self.screen, BLACK, [0, 0, 150, 50], 2)
-        self.draw_text(f"Coins: {coin_count}", 10, 10) 
+        self.draw_text(f"Coins: {coin_count}", 10, 10)
+
+    def draw_near_miss_count(self, near_miss_count):
+        text = f"Near Misses: {near_miss_count}"
+        text_surface = self.font.render(text, True, BLACK)
+        text_width, text_height = text_surface.get_size()
+        padding = 10
+        box_width = text_width + 2 * padding
+        box_height = text_height + 2 * padding
+        x_position = SCREEN_WIDTH - box_width - padding  # Top right corner
+        y_position = padding
+        
+        pygame.draw.rect(self.screen, WHITE, [x_position, y_position, box_width, box_height])
+        pygame.draw.rect(self.screen, BLACK, [x_position, y_position, box_width, box_height], 2)
+        self.screen.blit(text_surface, (x_position + padding, y_position + padding))

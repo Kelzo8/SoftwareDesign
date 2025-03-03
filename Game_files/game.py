@@ -12,6 +12,7 @@ from abc import ABC, abstractmethod
 import json
 import os
 from .UI import UI
+from .interceptor import NearMissInterceptor
 
 class Observer(ABC):
     @abstractmethod
@@ -73,18 +74,25 @@ class Game:
         }
         self.leaderboard = Leaderboard()
         self.game_state.attach(self.leaderboard)
+        self.near_miss_interceptor = NearMissInterceptor()
 
     def create_enemy_car(self):
-        lane = random.randint(0, NUM_LANES - 1)
-        x = lane * LANE_WIDTH + (LANE_WIDTH - ENEMY_CAR_WIDTH) // 2
-        y = -ENEMY_CAR_HEIGHT
-        return [x, y]
+        while True:
+            lane = random.randint(0, NUM_LANES - 1)
+            x = lane * LANE_WIDTH + (LANE_WIDTH - ENEMY_CAR_WIDTH) // 2
+            y = -ENEMY_CAR_HEIGHT
+            # Check for overlap with coins
+            if not any(abs(x - coin[0]) < ENEMY_CAR_WIDTH and abs(y - coin[1]) < ENEMY_CAR_HEIGHT for coin in self.coins):
+                return [x, y]
 
     def create_coin(self):
-        lane = random.randint(0, NUM_LANES - 1)
-        x = lane * LANE_WIDTH + (LANE_WIDTH - PLAYER_CAR_WIDTH) // 2
-        y = -PLAYER_CAR_HEIGHT
-        return [x, y]
+        while True:
+            lane = random.randint(0, NUM_LANES - 1)
+            x = lane * LANE_WIDTH + (LANE_WIDTH - PLAYER_CAR_WIDTH) // 2
+            y = -PLAYER_CAR_HEIGHT
+            # Check for overlap with enemy cars
+            if not any(abs(x - enemy_car[0]) < PLAYER_CAR_WIDTH and abs(y - enemy_car[1]) < PLAYER_CAR_HEIGHT for enemy_car in self.enemy_cars):
+                return [x, y]
 
     def run(self):
         # Add name input before starting the game
@@ -139,6 +147,10 @@ class Game:
                                     waiting_for_input = False
                                 elif event.type == pygame.KEYDOWN:
                                     waiting_for_input = False
+                    else:
+                        # Intercept for near misses
+                        self.near_miss_interceptor.intercept(
+                            (self.player_car_x, self.player_car_y), enemy_car)
 
                 # Remove off-screen enemy cars
                 self.enemy_cars[:] = [car for car in self.enemy_cars if car[1] < SCREEN_HEIGHT]
@@ -169,6 +181,9 @@ class Game:
 
                 # Draw coin count
                 self.ui.draw_coin_count(self.game_state.coin_count)
+
+                # Draw near miss count
+                self.ui.draw_near_miss_count(self.near_miss_interceptor.get_near_miss_count())
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
