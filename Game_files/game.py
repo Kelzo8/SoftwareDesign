@@ -208,28 +208,30 @@ class Game:
         # Background
         self.screen.fill((240, 240, 245))
         
-        # Game Over Title
+        # Game Over Title - Moved up slightly
         title_font = pygame.font.Font(None, 72)
         title = title_font.render("GAME OVER", True, (50, 50, 50))
-        title_rect = title.get_rect(center=(self.screen.get_width()/2, 80))
+        title_rect = title.get_rect(center=(self.screen.get_width()/2, 60))
         self.screen.blit(title, title_rect)
         
-        # Leaderboard Title
+        # Leaderboard Title - Moved up slightly
         subtitle = self.font.render("LEADERBOARD", True, (50, 50, 50))
-        subtitle_rect = subtitle.get_rect(center=(self.screen.get_width()/2, 130))
+        subtitle_rect = subtitle.get_rect(center=(self.screen.get_width()/2, 110))
         self.screen.blit(subtitle, subtitle_rect)
         
-        # Draw decorative line
+        # Draw decorative line - Moved up slightly
         pygame.draw.line(self.screen, (200, 200, 200),
-                        (self.screen.get_width()/4, 160),
-                        (self.screen.get_width()*3/4, 160), 3)
+                        (self.screen.get_width()/4, 140),
+                        (self.screen.get_width()*3/4, 140), 3)
         
-        # Display scores
-        y_offset = 200
+        # Reduced starting y_offset and spacing between boxes
+        y_offset = 160
+        box_height = 50  # Reduced box height
+        box_width = 400
+        spacing = 8  # Reduced spacing between boxes
+        
+        # Display top 5 scores
         for i, (name, score) in enumerate(self.leaderboard.scores[:5]):
-            # Background for each score
-            box_height = 60
-            box_width = 400
             box_x = self.screen.get_width()/2 - box_width/2
             
             # Draw box shadow
@@ -242,21 +244,43 @@ class Game:
             
             # Position number
             position = self.font.render(f"#{i + 1}", True, (50, 50, 50))
-            self.screen.blit(position, (box_x + 20, y_offset + 15))
+            self.screen.blit(position, (box_x + 20, y_offset + 10))
             
-            # Player name
+            # Player name and score
             name_text = self.font.render(name, True, (50, 50, 50))
-            self.screen.blit(name_text, (box_x + 80, y_offset + 15))
-            
-            # Score
             score_text = self.font.render(f"{score} coins", True, (255, 215, 0))
-            self.screen.blit(score_text, (box_x + box_width - 120, y_offset + 15))
+            self.screen.blit(name_text, (box_x + 80, y_offset + 10))
+            self.screen.blit(score_text, (box_x + box_width - 120, y_offset + 10))
             
-            y_offset += box_height + 10
+            y_offset += box_height + spacing
+
+        # Current player's score box
+        current_score_box_height = 70
+        current_score_box_width = 500
+        box_x = self.screen.get_width()/2 - current_score_box_width/2
         
-        # Press any key text
+        # Add spacing before current player's score
+        y_offset += 10
+        
+        # Draw box shadow for current score
+        pygame.draw.rect(self.screen, (200, 200, 200),
+                        [box_x+5, y_offset+5, current_score_box_width, current_score_box_height])
+        
+        # Draw main box for current score with gold border
+        pygame.draw.rect(self.screen, (230, 230, 240),
+                        [box_x, y_offset, current_score_box_width, current_score_box_height])
+        pygame.draw.rect(self.screen, GOLD,
+                        [box_x, y_offset, current_score_box_width, current_score_box_height], 3)
+        
+        # Display current player's info
+        your_name_text = self.font.render(f"Player: {self.game_state.player_name}", True, (50, 50, 50))
+        your_score_text = self.font.render(f"Your Score: {self.game_state.coin_count} coins", True, (50, 50, 50))
+        self.screen.blit(your_name_text, (box_x + 20, y_offset + 10))
+        self.screen.blit(your_score_text, (box_x + 20, y_offset + 40))
+        
+        # Press any key text - Moved closer to bottom
         press_key = self.font.render("Press any key to continue", True, (100, 100, 100))
-        press_key_rect = press_key.get_rect(center=(self.screen.get_width()/2, y_offset + 40))
+        press_key_rect = press_key.get_rect(center=(self.screen.get_width()/2, SCREEN_HEIGHT - 40))
         self.screen.blit(press_key, press_key_rect)
 
     def run(self):
