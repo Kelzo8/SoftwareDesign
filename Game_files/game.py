@@ -77,7 +77,7 @@ class Game:
         self.screen.blit(text_surface, (x, y))
 
     def draw_car(self, x, y, car_type):
-        color_map = {"ferrari": RED, "porsche": GREEN, "lambo": BLUE, "enemy": BLACK}
+        color_map = {"ferrari": RED, "lambo": GREEN, "porsche": BLUE, "enemy": BLACK}
         color = color_map.get(car_type, BLACK)
         pygame.draw.rect(self.screen, color, [x, y, PLAYER_CAR_WIDTH, PLAYER_CAR_HEIGHT])
 
