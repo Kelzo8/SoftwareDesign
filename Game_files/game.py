@@ -150,7 +150,7 @@ class Game:
                             self.game_state.stop_game()
                             waiting_for_input = True
                             while waiting_for_input:
-                                self.ui.display_leaderboard(self.leaderboard)
+                                self.ui.display_leaderboard(self.leaderboard, self.game_state.coin_count)
                                 pygame.display.flip()
                                 for event in pygame.event.get():
                                     if event.type == pygame.QUIT:
