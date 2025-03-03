@@ -26,3 +26,7 @@ class MoveDownCommand(Command):
     def execute(self, game):
         if game.player_car_y < SCREEN_HEIGHT - PLAYER_CAR_HEIGHT:
             game.player_car_y += PLAYER_CAR_SPEED
+
+class CheckPointCommand(Command):
+    def execute(self, game):
+        game.save_checkpoint()
