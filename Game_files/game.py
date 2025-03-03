@@ -12,7 +12,8 @@ from abc import ABC, abstractmethod
 import json
 import os
 from .UI import UI
-from .interceptor import NearMissInterceptor
+from .interceptor import NearMissInterceptor, InterceptorDispatcher
+from settings import CarDimensions as cd
 
 class Observer(ABC):
     @abstractmethod
@@ -59,8 +60,8 @@ class Game:
         self.font = pygame.font.Font(None, 36)
         self.ui = UI(self.screen, self.font)
         self.selected_car = None
-        self.player_car_x = SCREEN_WIDTH // 2 - PLAYER_CAR_WIDTH // 2
-        self.player_car_y = SCREEN_HEIGHT - PLAYER_CAR_HEIGHT - 10
+        self.player_car_x = SCREEN_WIDTH // 2 - cd.PLAYER_CAR_WIDTH.value // 2
+        self.player_car_y = SCREEN_HEIGHT - cd.PLAYER_CAR_HEIGHT.value - 10
         self.enemy_cars = []
         self.coins = []
         self.road_offset = 0
@@ -74,24 +75,26 @@ class Game:
         }
         self.leaderboard = Leaderboard()
         self.game_state.attach(self.leaderboard)
+        self.interceptor_dispatcher = InterceptorDispatcher()
         self.near_miss_interceptor = NearMissInterceptor()
+        self.interceptor_dispatcher.register_interceptor(self.near_miss_interceptor)
 
     def create_enemy_car(self):
         while True:
             lane = random.randint(0, NUM_LANES - 1)
-            x = lane * LANE_WIDTH + (LANE_WIDTH - ENEMY_CAR_WIDTH) // 2
-            y = -ENEMY_CAR_HEIGHT
+            x = lane * LANE_WIDTH + (LANE_WIDTH - cd.ENEMY_CAR_WIDTH.value) // 2
+            y = -cd.ENEMY_CAR_HEIGHT.value
             # Check for overlap with coins
-            if not any(abs(x - coin[0]) < ENEMY_CAR_WIDTH and abs(y - coin[1]) < ENEMY_CAR_HEIGHT for coin in self.coins):
+            if not any(abs(x - coin[0]) < cd.ENEMY_CAR_WIDTH.value and abs(y - coin[1]) < cd.ENEMY_CAR_HEIGHT.value for coin in self.coins):
                 return [x, y]
 
     def create_coin(self):
         while True:
             lane = random.randint(0, NUM_LANES - 1)
-            x = lane * LANE_WIDTH + (LANE_WIDTH - PLAYER_CAR_WIDTH) // 2
-            y = -PLAYER_CAR_HEIGHT
+            x = lane * LANE_WIDTH + (LANE_WIDTH - cd.PLAYER_CAR_WIDTH.value  ) // 2
+            y = -cd.PLAYER_CAR_HEIGHT.value
             # Check for overlap with enemy cars
-            if not any(abs(x - enemy_car[0]) < PLAYER_CAR_WIDTH and abs(y - enemy_car[1]) < PLAYER_CAR_HEIGHT for enemy_car in self.enemy_cars):
+            if not any(abs(x - enemy_car[0]) < cd.PLAYER_CAR_WIDTH.value and abs(y - enemy_car[1]) < cd.PLAYER_CAR_HEIGHT.value for enemy_car in self.enemy_cars):
                 return [x, y]
 
     def run(self):
@@ -133,10 +136,10 @@ class Game:
                     self.ui.draw_car(enemy_car[0], enemy_car[1], "enemy")
 
                     # Check for collision
-                    if (self.player_car_y < enemy_car[1] + ENEMY_CAR_HEIGHT and
-                        self.player_car_y + PLAYER_CAR_HEIGHT > enemy_car[1] and
-                        self.player_car_x < enemy_car[0] + ENEMY_CAR_WIDTH and
-                        self.player_car_x + PLAYER_CAR_WIDTH > enemy_car[0]):
+                    if (self.player_car_y < enemy_car[1] + cd.ENEMY_CAR_HEIGHT.value and
+                        self.player_car_y + cd.PLAYER_CAR_HEIGHT.value > enemy_car[1] and
+                        self.player_car_x < enemy_car[0] + cd.ENEMY_CAR_WIDTH.value and
+                        self.player_car_x + cd.PLAYER_CAR_WIDTH.value > enemy_car[0]):
                         self.game_state.stop_game()
                         waiting_for_input = True
                         while waiting_for_input:
@@ -148,8 +151,8 @@ class Game:
                                 elif event.type == pygame.KEYDOWN:
                                     waiting_for_input = False
                     else:
-                        # Intercept for near misses
-                        self.near_miss_interceptor.intercept(
+                        # Use dispatcher to handle near misses
+                        self.interceptor_dispatcher.execute_interceptors(
                             (self.player_car_x, self.player_car_y), enemy_car)
 
                 # Remove off-screen enemy cars
@@ -165,10 +168,10 @@ class Game:
                     self.ui.draw_coin(coin[0], coin[1])
 
                     # Check for coin collection
-                    if (self.player_car_y < coin[1] + PLAYER_CAR_HEIGHT // 2 and
-                        self.player_car_y + PLAYER_CAR_HEIGHT > coin[1] and
-                        self.player_car_x < coin[0] + PLAYER_CAR_WIDTH // 2 and
-                        self.player_car_x + PLAYER_CAR_WIDTH > coin[0]):
+                    if (self.player_car_y < coin[1] + cd.PLAYER_CAR_HEIGHT.value // 2 and
+                        self.player_car_y + cd.PLAYER_CAR_HEIGHT.value > coin[1] and
+                        self.player_car_x < coin[0] + cd.PLAYER_CAR_WIDTH.value // 2 and
+                        self.player_car_x + cd.PLAYER_CAR_WIDTH.value > coin[0]):
                         self.coins.remove(coin)
                         self.game_state.add_coin()
 

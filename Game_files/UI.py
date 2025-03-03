@@ -2,6 +2,7 @@ import pygame
 import random
 from settings import *
 import time
+from settings import CarDimensions as cd
 
 class UI:
     def __init__(self, screen, font):
@@ -15,7 +16,7 @@ class UI:
     def draw_car(self, x, y, car_type):
         color_map = {"ferrari": RED, "porsche": GREEN, "lambo": BLUE, "enemy": BLACK}
         color = color_map.get(car_type, BLACK)
-        pygame.draw.rect(self.screen, color, [x, y, PLAYER_CAR_WIDTH, PLAYER_CAR_HEIGHT])
+        pygame.draw.rect(self.screen, color, [x, y, cd.PLAYER_CAR_WIDTH.value, cd.PLAYER_CAR_HEIGHT.value])
 
     def draw_road(self, road_offset):
         self.screen.fill(GREY)
@@ -26,8 +27,8 @@ class UI:
                                  (lane_x, j + ROAD_LINE_HEIGHT + road_offset), 2)
 
     def draw_coin(self, x, y):
-        pygame.draw.circle(self.screen, (255, 215, 0), (x + PLAYER_CAR_WIDTH // 2, y + PLAYER_CAR_HEIGHT // 2), 
-                           PLAYER_CAR_WIDTH // 4)
+        pygame.draw.circle(self.screen, (255, 215, 0), (x + cd.PLAYER_CAR_WIDTH.value // 2, y + cd.PLAYER_CAR_HEIGHT.value // 2), 
+                           cd.PLAYER_CAR_WIDTH.value // 4)
 
     def draw_name_input(self, player_name):
         self.screen.fill((240, 240, 245))  # Light blue-gray background
@@ -112,10 +113,10 @@ class UI:
             
             # Draw car preview
             car_rect = pygame.draw.rect(self.screen, color,
-                                      [box_x + box_width/2 - PLAYER_CAR_WIDTH/2,
+                                      [box_x + box_width/2 - cd.PLAYER_CAR_WIDTH.value/2,
                                        box_y + 40,
-                                       PLAYER_CAR_WIDTH,
-                                       PLAYER_CAR_HEIGHT])
+                                       cd.PLAYER_CAR_WIDTH.value,
+                                       cd.PLAYER_CAR_HEIGHT.value])
             
             # Car name
             name_text = self.font.render(car_name, True, (50, 50, 50))
@@ -191,7 +192,7 @@ class UI:
         text = f"Near Misses: {near_miss_count}"
         text_surface = self.font.render(text, True, BLACK)
         text_width, text_height = text_surface.get_size()
-        padding = 10
+        padding = 1000
         box_width = text_width + 2 * padding
         box_height = text_height + 2 * padding
         x_position = SCREEN_WIDTH - box_width - padding  # Top right corner
