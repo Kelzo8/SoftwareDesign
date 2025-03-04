@@ -2,6 +2,7 @@ import pygame
 import random
 from settings import *
 import time
+from settings import CarDimensions as cd
 
 class UI:
     def __init__(self, screen, font):
@@ -15,7 +16,7 @@ class UI:
     def draw_car(self, x, y, car_type):
         color_map = {"ferrari": RED, "lambo": GREEN, "porsche": BLUE, "enemy": BLACK}
         color = color_map.get(car_type, BLACK)
-        pygame.draw.rect(self.screen, color, [x, y, PLAYER_CAR_WIDTH, PLAYER_CAR_HEIGHT])
+        pygame.draw.rect(self.screen, color, [x, y, cd.PLAYER_CAR_WIDTH.value, cd.PLAYER_CAR_HEIGHT.value])
 
     def draw_road(self, road_offset):
         self.screen.fill(GREY)
@@ -26,8 +27,8 @@ class UI:
                                  (lane_x, j + ROAD_LINE_HEIGHT + road_offset), 2)
 
     def draw_coin(self, x, y):
-        pygame.draw.circle(self.screen, (255, 215, 0), (x + PLAYER_CAR_WIDTH // 2, y + PLAYER_CAR_HEIGHT // 2), 
-                           PLAYER_CAR_WIDTH // 4)
+        pygame.draw.circle(self.screen, (255, 215, 0), (x + cd.PLAYER_CAR_WIDTH.value // 2, y + cd.PLAYER_CAR_HEIGHT.value // 2), 
+                           cd.PLAYER_CAR_WIDTH.value // 4)
 
     def draw_name_input(self, player_name):
         self.screen.fill((240, 240, 245))  # Light blue-gray background
@@ -69,6 +70,35 @@ class UI:
         inst = self.font.render("Press ENTER when done", True, (100, 100, 100))
         inst_rect = inst.get_rect(center=(SCREEN_WIDTH/2, 350))
         self.screen.blit(inst, inst_rect)
+
+    def draw_replay_quit_buttons(self):
+        # Define button properties
+        button_width = 200
+        button_height = 50
+        replay_button_x = SCREEN_WIDTH / 2 - button_width - 10
+        quit_button_x = SCREEN_WIDTH / 2 + 10
+        button_y = SCREEN_HEIGHT / 2 + 150  # Adjusted to move up by 20 pixels
+
+        # Get mouse position
+        mouse_pos = pygame.mouse.get_pos()
+
+        # Determine button colors based on hover
+        replay_color = LIGHT_GRAY if replay_button_x <= mouse_pos[0] <= replay_button_x + button_width and button_y <= mouse_pos[1] <= button_y + button_height else WHITE
+        quit_color = LIGHT_GRAY if quit_button_x <= mouse_pos[0] <= quit_button_x + button_width and button_y <= mouse_pos[1] <= button_y + button_height else WHITE
+
+        # Draw replay button
+        pygame.draw.rect(self.screen, replay_color, [replay_button_x, button_y, button_width, button_height])
+        pygame.draw.rect(self.screen, BLACK, [replay_button_x, button_y, button_width, button_height], 2)
+        replay_text = self.font.render("Replay", True, BLACK)
+        replay_rect = replay_text.get_rect(center=(replay_button_x + button_width / 2, button_y + button_height / 2))
+        self.screen.blit(replay_text, replay_rect)
+
+        # Draw quit button
+        pygame.draw.rect(self.screen, quit_color, [quit_button_x, button_y, button_width, button_height])
+        pygame.draw.rect(self.screen, BLACK, [quit_button_x, button_y, button_width, button_height], 2)
+        quit_text = self.font.render("Quit", True, BLACK)
+        quit_rect = quit_text.get_rect(center=(quit_button_x + button_width / 2, button_y + button_height / 2))
+        self.screen.blit(quit_text, quit_rect)
 
     def draw_car_selection(self):
         self.screen.fill((240, 240, 245))
@@ -112,10 +142,10 @@ class UI:
             
             # Draw car preview
             car_rect = pygame.draw.rect(self.screen, color,
-                                      [box_x + box_width/2 - PLAYER_CAR_WIDTH/2,
+                                      [box_x + box_width/2 - cd.PLAYER_CAR_WIDTH.value/2,
                                        box_y + 40,
-                                       PLAYER_CAR_WIDTH,
-                                       PLAYER_CAR_HEIGHT])
+                                       cd.PLAYER_CAR_WIDTH.value,
+                                       cd.PLAYER_CAR_HEIGHT.value])
             
             # Car name
             name_text = self.font.render(car_name, True, (50, 50, 50))
@@ -127,7 +157,23 @@ class UI:
             key_rect = key_text.get_rect(center=(box_x + box_width/2, box_y + 150))
             self.screen.blit(key_text, key_rect)
 
-    def display_leaderboard(self, leaderboard, current_score=None):
+    def handle_car_selection_click(self, mouse_pos):
+        cars = ["ferrari", "porsche", "lambo"]
+        box_width = 220
+        box_height = 180
+        margin = 20
+        total_width = (box_width + margin) * len(cars)
+        start_x = (SCREEN_WIDTH - total_width) / 2
+        box_y = 200
+
+        for i, car_name in enumerate(cars):
+            box_x = start_x + i * (box_width + margin)
+            if (box_x <= mouse_pos[0] <= box_x + box_width and 
+                box_y <= mouse_pos[1] <= box_y + box_height):
+                return car_name
+        return None
+
+    def display_leaderboard(self, leaderboard, current_score):
         # Background
         self.screen.fill((240, 240, 245))
         
@@ -212,12 +258,22 @@ class UI:
                                            top=score_box_y + 40)
             self.screen.blit(score_text, score_rect)
 
-            # Press any key text - moved up slightly
-            press_key = self.font.render("Press any key to continue", True, (100, 100, 100))
-            press_key_rect = press_key.get_rect(center=(self.screen.get_width()/2, SCREEN_HEIGHT - 20))
-            self.screen.blit(press_key, press_key_rect)
-
     def draw_coin_count(self, coin_count):
         pygame.draw.rect(self.screen, WHITE, [0, 0, 150, 50])
         pygame.draw.rect(self.screen, BLACK, [0, 0, 150, 50], 2)
         self.draw_text(f"Coins: {coin_count}", 10, 10)
+        self.draw_text(f"Coins: {coin_count}", 10, 10)
+
+    def draw_near_miss_count(self, near_miss_count):
+        text = f"Near Misses: {near_miss_count}"
+        text_surface = self.font.render(text, True, BLACK)
+        text_width, text_height = text_surface.get_size()
+        padding = 10  # Reduced padding for better visibility
+        box_width = text_width + 2 * padding
+        box_height = text_height + 2 * padding
+        x_position = SCREEN_WIDTH - box_width - padding  # Adjusted position
+        y_position = padding
+        
+        pygame.draw.rect(self.screen, WHITE, [x_position, y_position, box_width, box_height])
+        pygame.draw.rect(self.screen, BLACK, [x_position, y_position, box_width, box_height], 2)
+        self.screen.blit(text_surface, (x_position + padding, y_position + padding))

@@ -1,6 +1,10 @@
 # command.py
 from abc import ABC, abstractmethod
-from settings import SCREEN_WIDTH, PLAYER_CAR_WIDTH, PLAYER_CAR_SPEED, SCREEN_HEIGHT, PLAYER_CAR_HEIGHT
+from settings import SCREEN_WIDTH, PLAYER_CAR_SPEED, SCREEN_HEIGHT, CarDimensions
+
+# Use CarDimensions enum for player car dimensions
+PLAYER_CAR_WIDTH = CarDimensions.PLAYER_CAR_WIDTH.value
+PLAYER_CAR_HEIGHT = CarDimensions.PLAYER_CAR_HEIGHT.value
 
 class Command(ABC):
     @abstractmethod

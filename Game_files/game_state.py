@@ -29,3 +29,8 @@ class GameState:
     def notify_observers(self):
         for observer in self.observers:
             observer.update(self.player_name, self.coin_count)
+
+    def reset(self):
+        self.is_running = True
+        # Do not reset the player's name to retain it across sessions
+        self.coin_count = 0
