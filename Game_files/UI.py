@@ -77,7 +77,7 @@ class UI:
         button_height = 50
         replay_button_x = SCREEN_WIDTH / 2 - button_width - 10
         quit_button_x = SCREEN_WIDTH / 2 + 10
-        button_y = SCREEN_HEIGHT / 2 + 250  # Adjusted to move below the leaderboard
+        button_y = SCREEN_HEIGHT / 2 + 150  # Adjusted to move up by 20 pixels
 
         # Get mouse position
         mouse_pos = pygame.mouse.get_pos()
@@ -173,7 +173,7 @@ class UI:
                 return car_name
         return None
 
-    def display_leaderboard(self, leaderboard):
+    def display_leaderboard(self, leaderboard, current_score):
         # Background
         self.screen.fill((240, 240, 245))
         
@@ -257,12 +257,6 @@ class UI:
             score_rect = score_text.get_rect(centerx=self.screen.get_width()/2,
                                            top=score_box_y + 40)
             self.screen.blit(score_text, score_rect)
-
-            # Press any key text - moved up slightly
-            press_key = self.font.render("Press any key to continue", True, (100, 100, 100))
-            press_key_rect = press_key.get_rect(center=(self.screen.get_width()/2, SCREEN_HEIGHT - 20))
-            self.screen.blit(press_key, press_key_rect)
-            y_offset += box_height + 10
 
     def draw_coin_count(self, coin_count):
         pygame.draw.rect(self.screen, WHITE, [0, 0, 150, 50])
