@@ -9,21 +9,31 @@ class Interceptor(ABC):
 class NearMissInterceptor(Interceptor):
     def __init__(self):
         self.near_miss_count = 0
+        self.counted_vehicles = []  # Track counted vehicles
 
-    def intercept(self, player_car_pos, enemy_car_pos):
-        player_x, player_y = player_car_pos
-        enemy_x, enemy_y = enemy_car_pos
+    def intercept(self, player_pos, enemy_pos):
+        player_x, player_y = player_pos
+        enemy_x, enemy_y = enemy_pos
+        buffer = 1  # Buffer for near miss detection
 
-        # Define a buffer for near miss detection
-        buffer = 1
+        # Create a unique identifier for the enemy vehicle
+        enemy_id = (enemy_x, enemy_y)
 
         # Check for near miss
         if (abs(player_x - enemy_x) < cd.PLAYER_CAR_WIDTH.value + buffer and
             abs(player_y - enemy_y) < cd.PLAYER_CAR_HEIGHT.value + buffer):
-            self.near_miss_count += 1
+            if not (abs(player_x - enemy_x) < cd.PLAYER_CAR_WIDTH.value and
+                    abs(player_y - enemy_y) < cd.PLAYER_CAR_HEIGHT.value):
+                if enemy_id not in self.counted_vehicles:
+                    self.near_miss_count += 1
+                    self.counted_vehicles.append(enemy_id)
 
     def get_near_miss_count(self):
         return self.near_miss_count
+
+    def remove_off_screen_vehicles(self, enemy_cars):
+        # Remove vehicles that are no longer on screen from the set
+        self.counted_vehicles = [enemy_id for enemy_id in self.counted_vehicles if enemy_id in enemy_cars]
 
 class InterceptorDispatcher:
     def __init__(self):

@@ -2,7 +2,7 @@ from enum import Enum
 
 # Screen dimensions
 SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_HEIGHT = 700
 
 # Colors
 WHITE = (255, 255, 255)

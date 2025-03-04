@@ -78,6 +78,7 @@ class Game:
         self.interceptor_dispatcher = InterceptorDispatcher()
         self.near_miss_interceptor = NearMissInterceptor()
         self.interceptor_dispatcher.register_interceptor(self.near_miss_interceptor)
+        self.enemy_cars_to_check = []  # List to track cars being checked for near misses
 
     def create_enemy_car(self):
         while True:
@@ -99,8 +100,8 @@ class Game:
 
     def run(self):
         # Add name input before starting the game
-        player_name = ""
-        name_entered = False
+        player_name = self.game_state.player_name  # Use existing player name if available
+        name_entered = bool(player_name)  # Determine if name was previously entered
         
         while not name_entered and self.game_state.is_running:
             self.ui.draw_name_input(player_name)
@@ -126,6 +127,20 @@ class Game:
 
             if not self.selected_car:
                 self.ui.draw_car_selection()
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        self.game_state.stop_game()
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_1:
+                            self.selected_car = CarFactory.create_car("ferrari")
+                        elif event.key == pygame.K_2:
+                            self.selected_car = CarFactory.create_car("porsche")
+                        elif event.key == pygame.K_3:
+                            self.selected_car = CarFactory.create_car("lambo")
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        car_name = self.ui.handle_car_selection_click(event.pos)
+                        if car_name:
+                            self.selected_car = CarFactory.create_car(car_name)
             else:
                 self.ui.draw_road(self.road_offset)
                 self.ui.draw_car(self.player_car_x, self.player_car_y, self.selected_car.__class__.__name__.lower())
@@ -135,7 +150,17 @@ class Game:
                     enemy_car[1] += ENEMY_CAR_SPEED
                     self.ui.draw_car(enemy_car[0], enemy_car[1], "enemy")
 
-                    # Check for collision
+                # Check for near misses
+                for enemy_car in self.enemy_cars_to_check[:]:  # Iterate over a copy of the list
+                    # Use dispatcher to handle near misses
+                    self.interceptor_dispatcher.execute_interceptors(
+                        (self.player_car_x, self.player_car_y), enemy_car)
+                    # Check if the enemy car was counted as a near miss
+                    if (enemy_car[0], enemy_car[1]) in self.near_miss_interceptor.counted_vehicles:
+                        self.enemy_cars_to_check.remove(enemy_car)
+
+                # Check for collision
+                for enemy_car in self.enemy_cars:
                     if (self.player_car_y < enemy_car[1] + cd.ENEMY_CAR_HEIGHT.value and
                         self.player_car_y + cd.PLAYER_CAR_HEIGHT.value > enemy_car[1] and
                         self.player_car_x < enemy_car[0] + cd.ENEMY_CAR_WIDTH.value and
@@ -144,23 +169,28 @@ class Game:
                         waiting_for_input = True
                         while waiting_for_input:
                             self.ui.display_leaderboard(self.leaderboard)
+                            self.ui.draw_replay_quit_buttons()
                             pygame.display.flip()
                             for event in pygame.event.get():
                                 if event.type == pygame.QUIT:
                                     waiting_for_input = False
-                                elif event.type == pygame.KEYDOWN:
-                                    waiting_for_input = False
-                    else:
-                        # Use dispatcher to handle near misses
-                        self.interceptor_dispatcher.execute_interceptors(
-                            (self.player_car_x, self.player_car_y), enemy_car)
+                                elif event.type == pygame.MOUSEBUTTONDOWN:
+                                    if self.is_replay_button_clicked(event.pos):
+                                        self.reset_game()
+                                        waiting_for_input = False
+                                    elif self.is_quit_button_clicked(event.pos):
+                                        self.game_state.stop_game()
+                                        waiting_for_input = False
+                                        return  # Exit the game loop
 
                 # Remove off-screen enemy cars
                 self.enemy_cars[:] = [car for car in self.enemy_cars if car[1] < SCREEN_HEIGHT]
 
                 # Add new enemy cars
                 if random.randint(1, 20) == 1:
-                    self.enemy_cars.append(self.create_enemy_car())
+                    new_car = self.create_enemy_car()
+                    self.enemy_cars.append(new_car)
+                    self.enemy_cars_to_check.append(new_car)
 
                 # Move coins
                 for coin in self.coins:
@@ -191,13 +221,6 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.game_state.stop_game()
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_1:
-                        self.selected_car = CarFactory.create_car("ferrari")
-                    elif event.key == pygame.K_2:
-                        self.selected_car = CarFactory.create_car("porsche")
-                    elif event.key == pygame.K_3:
-                        self.selected_car = CarFactory.create_car("lambo")
 
             keys = pygame.key.get_pressed()
             if self.selected_car:
@@ -209,3 +232,32 @@ class Game:
             self.clock.tick(60)
 
         pygame.quit()
+
+    def is_replay_button_clicked(self, mouse_pos):
+        button_width = 200
+        button_height = 50
+        replay_button_x = SCREEN_WIDTH / 2 - button_width - 10
+        button_y = SCREEN_HEIGHT / 2 + 250  # Adjusted to match the new button position
+        return (replay_button_x <= mouse_pos[0] <= replay_button_x + button_width and
+                button_y <= mouse_pos[1] <= button_y + button_height)
+
+    def is_quit_button_clicked(self, mouse_pos):
+        button_width = 200
+        button_height = 50
+        quit_button_x = SCREEN_WIDTH / 2 + 10
+        button_y = SCREEN_HEIGHT / 2 + 250  # Adjusted to match the new button position
+        return (quit_button_x <= mouse_pos[0] <= quit_button_x + button_width and
+                button_y <= mouse_pos[1] <= button_y + button_height)
+
+    def reset_game(self):
+        self.selected_car = None
+        self.player_car_x = SCREEN_WIDTH // 2 - cd.PLAYER_CAR_WIDTH.value // 2
+        self.player_car_y = SCREEN_HEIGHT - cd.PLAYER_CAR_HEIGHT.value - 10
+        self.enemy_cars = []
+        self.coins = []
+        self.road_offset = 0
+        self.near_miss_interceptor.near_miss_count = 0  # Reset near miss count
+        self.game_state.coin_count = 0  # Reset coin count
+        # Set flag to prompt for name entry again
+        self.game_state.is_running = True
+        name_entered = False  # Reset name entry flag
