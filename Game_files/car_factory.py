@@ -12,14 +12,14 @@ class CarFactory:
         else:
             raise ValueError(f"Unknown car type: {car_type}")
 
-class Ferrari(Car):
-    def drive(self):
-        return "Driving a Ferrari"
+# class Ferrari(Car):
+#     def drive(self):
+#         return "Driving a Ferrari"
 
-class Porsche(Car):
-    def drive(self):
-        return "Driving a Porsche"
+# class Porsche(Car):
+#     def drive(self):
+#         return "Driving a Porsche"
 
-class Lambo(Car):
-    def drive(self):
-        return "Driving a Lambo"
+# class Lambo(Car):
+#     def drive(self):
+#         return "Driving a Lambo"

@@ -164,7 +164,7 @@ class Game:
                             self.selected_car = CarFactory.create_car(car_name)
             else:
                 self.ui.draw_road(self.road_offset)
-                self.ui.draw_car(self.player_car_x, self.player_car_y, self.selected_car.__class__.__name__.lower())
+                self.ui.draw_car(self.player_car_x, self.player_car_y, self.selected_car)
 
                 # Move enemy cars
                 for enemy_car in self.enemy_cars:
@@ -256,9 +256,7 @@ class Game:
             if self.selected_car:
                 for key, command in self.commands.items():
                     if keys[key] and key not in self.car_selection:
-                        print(key)
                         command.execute(self)
-
 
             pygame.display.flip()
             self.clock.tick(60)

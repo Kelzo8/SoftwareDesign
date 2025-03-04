@@ -13,10 +13,15 @@ class UI:
         text_surface = self.font.render(text, True, BLACK)
         self.screen.blit(text_surface, (x, y))
 
-    def draw_car(self, x, y, car_type):
+    def draw_car(self, x, y, car):
+        #car1_image = pygame.image.load('assets/coupe_blue.png').convert_alpha()
+        #car2_image = pygame.image.load('assets/Police.png').convert_alpha()
         color_map = {"ferrari": RED, "lambo": GREEN, "porsche": BLUE, "enemy": BLACK}
-        color = color_map.get(car_type, BLACK)
-        pygame.draw.rect(self.screen, color, [x, y, cd.PLAYER_CAR_WIDTH.value, cd.PLAYER_CAR_HEIGHT.value])
+        
+        #color = color_map.get(car_type, BLACK)
+        
+        #pygame.draw.rect(self.screen, color, [x, y, PLAYER_CAR_WIDTH, PLAYER_CAR_HEIGHT])
+        self.screen.blit(car.get_image(), (x, y))
 
     def draw_road(self, road_offset):
         self.screen.fill(GREY)
