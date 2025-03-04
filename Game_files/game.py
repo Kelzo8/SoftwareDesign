@@ -90,13 +90,33 @@ class Game:
         self.enemy_cars_to_check = []  # List to track cars being checked for near misses
 
     def create_enemy_car(self):
-        while True:
+        max_attempts = 100  # Maximum attempts to find a valid position
+        attempt = 0
+
+        while attempt < max_attempts:
             lane = random.randint(0, NUM_LANES - 1)
             x = lane * LANE_WIDTH + (LANE_WIDTH - cd.ENEMY_CAR_WIDTH.value) // 2
             y = -cd.ENEMY_CAR_HEIGHT.value
+
+            # Check for overlap with existing enemy cars
+            overlap = False
+            for enemy_car in self.enemy_cars:
+                if (abs(x - enemy_car[0]) < cd.ENEMY_CAR_WIDTH.value and
+                    abs(y - enemy_car[1]) < cd.ENEMY_CAR_HEIGHT.value):
+                    overlap = True
+                    break
+
             # Check for overlap with coins
-            if not any(abs(x - coin[0]) < cd.ENEMY_CAR_WIDTH.value and abs(y - coin[1]) < cd.ENEMY_CAR_HEIGHT.value for coin in self.coins):
+            if not overlap and not any(
+                abs(x - coin[0]) < cd.ENEMY_CAR_WIDTH.value and
+                abs(y - coin[1]) < cd.ENEMY_CAR_HEIGHT.value
+                for coin in self.coins
+            ):
                 return [x, y]
+
+            attempt += 1
+
+        return None  # Return None if no valid position is found
 
     def create_coin(self):
         while True:
