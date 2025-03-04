@@ -74,6 +74,11 @@ class Game:
             pygame.K_DOWN: MoveDownCommand(),
             pygame.K_s: CheckPointCommand()
         }
+        self.car_selection = {
+            pygame.K_1: "ferrari",
+            pygame.K_2: "porsche",
+            pygame.K_3: "lambo"
+        }
         self.leaderboard = Leaderboard()
         self.game_state.attach(self.leaderboard)
         self.caretaker = Caretaker()
@@ -192,18 +197,21 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.game_state.stop_game()
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_1:
-                        self.selected_car = CarFactory.create_car("ferrari")
-                    elif event.key == pygame.K_2:
-                        self.selected_car = CarFactory.create_car("porsche")
-                    elif event.key == pygame.K_3:
-                        self.selected_car = CarFactory.create_car("lambo")
+                    if event.key in self.car_selection:
+                        self.selected_car = CarFactory.create_car(self.car_selection[event.key])
+                    elif event.key in self.commands and self.selected_car:
+                        self.commands[event.key].execute(self)
+                elif event.type == pygame.KEYUP:
+                    if event.key in self.commands and self.selected_car:
+                        self.commands[event.key].reset()
     
             keys = pygame.key.get_pressed()
             if self.selected_car:
                 for key, command in self.commands.items():
-                    if keys[key]:
+                    if keys[key] and key not in self.car_selection:
+                        print(key)
                         command.execute(self)
+
 
             pygame.display.flip()
             self.clock.tick(60)
