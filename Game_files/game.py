@@ -5,8 +5,10 @@ import random
 from .car_factory import CarFactory
 from settings import *
 from .game_state import GameState
-from .command import MoveLeftCommand, MoveRightCommand, MoveUpCommand, MoveDownCommand
+from .command import MoveLeftCommand, MoveRightCommand, MoveUpCommand, MoveDownCommand, CheckPointCommand
 from .leaderboard import Leaderboard
+from .memento import Memento
+from .caretaker import Caretaker
 import pygame.locals
 from abc import ABC, abstractmethod
 import json
@@ -72,9 +74,16 @@ class Game:
             pygame.K_RIGHT: MoveRightCommand(),
             pygame.K_UP: MoveUpCommand(),
             pygame.K_DOWN: MoveDownCommand(),
+            pygame.K_s: CheckPointCommand()
+        }
+        self.car_selection = {
+            pygame.K_1: "ferrari",
+            pygame.K_2: "porsche",
+            pygame.K_3: "lambo"
         }
         self.leaderboard = Leaderboard()
         self.game_state.attach(self.leaderboard)
+        self.caretaker = Caretaker()
         self.interceptor_dispatcher = InterceptorDispatcher()
         self.near_miss_interceptor = NearMissInterceptor()
         self.interceptor_dispatcher.register_interceptor(self.near_miss_interceptor)
@@ -98,6 +107,18 @@ class Game:
             if not any(abs(x - enemy_car[0]) < cd.PLAYER_CAR_WIDTH.value and abs(y - enemy_car[1]) < cd.PLAYER_CAR_HEIGHT.value for enemy_car in self.enemy_cars):
                 return [x, y]
 
+    def save_checkpoint(self):
+        if self.game_state.coin_count >= 5:
+            self.game_state.coin_count -= 5
+            memento = Memento(self.player_car_x, self.player_car_y, self.game_state.coin_count, self.enemy_cars, self.coins)
+            self.caretaker.save_memento(memento)
+
+    def load_checkpoint(self):
+        memento = self.caretaker.get_last_memento()
+        if memento:
+            self.player_car_x, self.player_car_y, self.game_state.coin_count, self.enemy_cars, self.coins = memento.get_state()
+        return memento is not None
+
     def run(self):
         # Add name input before starting the game
         player_name = self.game_state.player_name  # Use existing player name if available
@@ -118,7 +139,7 @@ class Game:
                         player_name = player_name[:-1]
                     elif event.unicode.isalnum() or event.unicode.isspace():
                         player_name += event.unicode
-            
+
             pygame.display.flip()
             self.clock.tick(60)
 
@@ -150,6 +171,23 @@ class Game:
                     enemy_car[1] += ENEMY_CAR_SPEED
                     self.ui.draw_car(enemy_car[0], enemy_car[1], "enemy")
 
+                    # Check for collision
+                    if (self.player_car_y < enemy_car[1] + ENEMY_CAR_HEIGHT and
+                        self.player_car_y + PLAYER_CAR_HEIGHT > enemy_car[1] and
+                        self.player_car_x < enemy_car[0] + ENEMY_CAR_WIDTH and
+                        self.player_car_x + PLAYER_CAR_WIDTH > enemy_car[0]):
+
+                        if not self.load_checkpoint():
+                            self.game_state.stop_game()
+                            waiting_for_input = True
+                            while waiting_for_input:
+                                self.ui.display_leaderboard(self.leaderboard, self.game_state.coin_count)
+                                pygame.display.flip()
+                                for event in pygame.event.get():
+                                    if event.type == pygame.QUIT:
+                                        waiting_for_input = False
+                                    elif event.type == pygame.KEYDOWN:
+                                        waiting_for_input = False
                 # Check for near misses
                 for enemy_car in self.enemy_cars_to_check[:]:  # Iterate over a copy of the list
                     # Use dispatcher to handle near misses
@@ -221,12 +259,23 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.game_state.stop_game()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key in self.car_selection:
+                        self.selected_car = CarFactory.create_car(self.car_selection[event.key])
+                    elif event.key in self.commands and self.selected_car:
+                        self.commands[event.key].execute(self)
+                elif event.type == pygame.KEYUP:
+                    if event.key in self.commands and self.selected_car:
+                        self.commands[event.key].reset()
+    
 
             keys = pygame.key.get_pressed()
             if self.selected_car:
                 for key, command in self.commands.items():
-                    if keys[key]:
+                    if keys[key] and key not in self.car_selection:
+                        print(key)
                         command.execute(self)
+
 
             pygame.display.flip()
             self.clock.tick(60)
