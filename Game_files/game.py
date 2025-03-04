@@ -10,49 +10,9 @@ from .leaderboard import Leaderboard
 from .memento import Memento
 from .caretaker import Caretaker
 import pygame.locals
-from abc import ABC, abstractmethod
-import json
-import os
 from .UI import UI
 from .interceptor import NearMissInterceptor, InterceptorDispatcher
 from settings import CarDimensions as cd
-
-class Observer(ABC):
-    @abstractmethod
-    def update(self, player_name: str, score: int):
-        pass
-
-class Leaderboard(Observer):
-    def __init__(self):
-        self.scores = []
-        self.load_scores()
-    
-    def load_scores(self):
-        try:
-            if os.path.exists('leaderboard.json'):
-                with open('leaderboard.json', 'r') as file:
-                    self.scores = json.load(file)
-            if not isinstance(self.scores, list):
-                self.scores = []
-        except:
-            self.scores = []
-    
-    def save_scores(self):
-        with open('leaderboard.json', 'w') as file:
-            json.dump(self.scores[:5], file)
-    
-    def update(self, player_name: str, score: int):
-        should_add = len(self.scores) < 5
-        
-        if not should_add:
-            lowest_score = min(score for _, score in self.scores)
-            should_add = score > lowest_score
-        
-        if should_add:
-            self.scores.append([player_name, score])
-            self.scores.sort(key=lambda x: x[1], reverse=True)
-            self.scores = self.scores[:5]
-            self.save_scores()
 
 class Game:
     def __init__(self):
