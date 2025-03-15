@@ -11,9 +11,6 @@ from .leaderboard import Leaderboard
 from .memento import Memento
 from .caretaker import Caretaker
 import pygame.locals
-from abc import ABC, abstractmethod
-import json
-import os
 from .UI import UI
 from .interceptor import NearMissInterceptor, InterceptorDispatcher
 from settings import CarDimensions as cd
