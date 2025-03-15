@@ -1,5 +1,6 @@
 /.venv/*
 /.venv/
 leaderboard.json
+SoftwareDesign/leaderboard.json
 */__pycache__/
 /__pycache__/
