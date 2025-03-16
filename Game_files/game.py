@@ -1,4 +1,8 @@
 # game.py
+
+from abc import ABC, abstractmethod
+import json
+import os
 import time
 import pygame
 import random
@@ -13,6 +17,45 @@ import pygame.locals
 from .UI import UI
 from .interceptor import NearMissInterceptor, InterceptorDispatcher
 from settings import CarDimensions as cd
+# Import the strategy pattern classes
+from .strategy import EnemyCar, StraightMovement, ZigZagMovement, ChaseMovement
+
+class Observer(ABC):
+    @abstractmethod
+    def update(self, player_name: str, score: int):
+        pass
+
+class Leaderboard(Observer):
+    def __init__(self):
+        self.scores = []
+        self.load_scores()
+    
+    def load_scores(self):
+        try:
+            if os.path.exists('leaderboard.json'):
+                with open('leaderboard.json', 'r') as file:
+                    self.scores = json.load(file)
+            if not isinstance(self.scores, list):
+                self.scores = []
+        except:
+            self.scores = []
+    
+    def save_scores(self):
+        with open('leaderboard.json', 'w') as file:
+            json.dump(self.scores[:5], file)
+    
+    def update(self, player_name: str, score: int):
+        should_add = len(self.scores) < 5
+        
+        if not should_add:
+            lowest_score = min(score for _, score in self.scores)
+            should_add = score > lowest_score
+        
+        if should_add:
+            self.scores.append([player_name, score])
+            self.scores.sort(key=lambda x: x[1], reverse=True)
+            self.scores = self.scores[:5]
+            self.save_scores()
 
 class Game:
     def __init__(self):
@@ -24,7 +67,7 @@ class Game:
         self.selected_car = None
         self.player_car_x = SCREEN_WIDTH // 2 - cd.PLAYER_CAR_WIDTH.value // 2
         self.player_car_y = SCREEN_HEIGHT - cd.PLAYER_CAR_HEIGHT.value - 10
-        self.enemy_cars = []
+        self.enemy_cars = []  # List of EnemyCar objects
         self.coins = []
         self.road_offset = 0
         self.clock = pygame.time.Clock()
@@ -47,44 +90,39 @@ class Game:
         self.interceptor_dispatcher = InterceptorDispatcher()
         self.near_miss_interceptor = NearMissInterceptor()
         self.interceptor_dispatcher.register_interceptor(self.near_miss_interceptor)
-        self.enemy_cars_to_check = []  # List to track cars being checked for near misses
+        self.enemy_cars_to_check = []  # List to track enemy cars for near misses
 
     def create_enemy_car(self):
-        max_attempts = 100  # Maximum attempts to find a valid position
+        max_attempts = 100
         attempt = 0
-
         while attempt < max_attempts:
             lane = random.randint(0, NUM_LANES - 1)
             x = lane * LANE_WIDTH + (LANE_WIDTH - cd.ENEMY_CAR_WIDTH.value) // 2
             y = -cd.ENEMY_CAR_HEIGHT.value
-
-            # Check for overlap with existing enemy cars
             overlap = False
             for enemy_car in self.enemy_cars:
-                if (abs(x - enemy_car[0]) < cd.ENEMY_CAR_WIDTH.value and
-                    abs(y - enemy_car[1]) < cd.ENEMY_CAR_HEIGHT.value):
+                if (abs(x - enemy_car.x) < cd.ENEMY_CAR_WIDTH.value and
+                    abs(y - enemy_car.y) < cd.ENEMY_CAR_HEIGHT.value):
                     overlap = True
                     break
-
-            # Check for overlap with coins
-            if not overlap and not any(
-                abs(x - coin[0]) < cd.ENEMY_CAR_WIDTH.value and
-                abs(y - coin[1]) < cd.ENEMY_CAR_HEIGHT.value
-                for coin in self.coins
-            ):
-                return [x, y]
-
+            if not overlap:
+                # Randomly choose a movement strategy.
+                strategy = random.choice([
+                    StraightMovement(),
+                    ZigZagMovement(),
+                    ChaseMovement()
+                ])
+                return EnemyCar(x, y, ENEMY_CAR_SPEED, strategy)
             attempt += 1
-
-        return None  # Return None if no valid position is found
+        return None
 
     def create_coin(self):
         while True:
             lane = random.randint(0, NUM_LANES - 1)
-            x = lane * LANE_WIDTH + (LANE_WIDTH - cd.PLAYER_CAR_WIDTH.value  ) // 2
+            x = lane * LANE_WIDTH + (LANE_WIDTH - cd.PLAYER_CAR_WIDTH.value) // 2
             y = -cd.PLAYER_CAR_HEIGHT.value
-            # Check for overlap with enemy cars
-            if not any(abs(x - enemy_car[0]) < cd.PLAYER_CAR_WIDTH.value and abs(y - enemy_car[1]) < cd.PLAYER_CAR_HEIGHT.value for enemy_car in self.enemy_cars):
+            # Check for overlap with enemy cars.
+            if not any(abs(x - enemy_car.x) < cd.PLAYER_CAR_WIDTH.value and abs(y - enemy_car.y) < cd.PLAYER_CAR_HEIGHT.value for enemy_car in self.enemy_cars):
                 return [x, y]
 
     def save_checkpoint(self):
@@ -96,17 +134,21 @@ class Game:
     def load_checkpoint(self):
         memento = self.caretaker.get_last_memento()
         if memento:
-            self.player_car_x, self.player_car_y, self.game_state.coin_count, self.enemy_cars, self.coins = memento.get_state()
+            self.player_car_x, self.player_car_y, self.game_state.coin_count, enemy_car_states, self.coins = memento.get_state()
+            # Reconstruct enemy car objects from stored state if needed.
+            self.enemy_cars = []
+            for state in enemy_car_states:
+                # For simplicity, loaded enemy cars use the StraightMovement strategy.
+                car = EnemyCar(state['x'], state['y'], state['speed'], StraightMovement())
+                self.enemy_cars.append(car)
         return memento is not None
 
     def run(self):
-        # Add name input before starting the game
-        player_name = self.game_state.player_name  # Use existing player name if available
-        name_entered = bool(player_name)  # Determine if name was previously entered
-        
+        player_name = self.game_state.player_name
+        name_entered = bool(player_name)
+
         while not name_entered and self.game_state.is_running:
             self.ui.draw_name_input(player_name)
-            
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.game_state.stop_game()
@@ -119,7 +161,6 @@ class Game:
                         player_name = player_name[:-1]
                     elif event.unicode.isalnum() or event.unicode.isspace():
                         player_name += event.unicode
-
             pygame.display.flip()
             self.clock.tick(60)
 
@@ -146,23 +187,21 @@ class Game:
                 self.ui.draw_road(self.road_offset)
                 self.ui.draw_car(self.player_car_x, self.player_car_y, self.selected_car.__class__.__name__.lower())
 
-                # Move enemy cars
+                # Move and draw enemy cars using their movement strategy.
                 for enemy_car in self.enemy_cars:
-                    enemy_car[1] += ENEMY_CAR_SPEED
-                    self.ui.draw_car(enemy_car[0], enemy_car[1], "enemy")
-
-                    # Check for collision
-                    if (self.player_car_y < enemy_car[1] + cd.ENEMY_CAR_HEIGHT.value and
-                        self.player_car_y + cd.PLAYER_CAR_HEIGHT.value > enemy_car[1] and
-                        self.player_car_x < enemy_car[0] + cd.ENEMY_CAR_WIDTH.value and
-                        self.player_car_x + cd.PLAYER_CAR_WIDTH.value > enemy_car[0]):
-
+                    enemy_car.move(self.player_car_x, self.enemy_cars, self.game_state.coin_count)
+                    enemy_car.draw(self.ui)
+                    # Collision detection between player's car and enemy car.
+                    if (self.player_car_y < enemy_car.y + cd.ENEMY_CAR_HEIGHT.value and
+                        self.player_car_y + cd.PLAYER_CAR_HEIGHT.value > enemy_car.y and
+                        self.player_car_x < enemy_car.x + cd.ENEMY_CAR_WIDTH.value and
+                        self.player_car_x + cd.PLAYER_CAR_WIDTH.value > enemy_car.x):
                         if not self.load_checkpoint():
                             self.game_state.stop_game()
                             waiting_for_input = True
                             while waiting_for_input:
                                 self.ui.display_leaderboard(self.leaderboard, self.game_state.coin_count)
-                                self.ui.draw_replay_quit_buttons()  # Draw replay and quit buttons
+                                self.ui.draw_replay_quit_buttons()
                                 pygame.display.flip()
                                 for event in pygame.event.get():
                                     if event.type == pygame.QUIT:
@@ -174,31 +213,29 @@ class Game:
                                         elif self.is_quit_button_clicked(event.pos):
                                             self.game_state.stop_game()
                                             waiting_for_input = False
-                                            return  # Exit the game loop
-                # Check for near misses
-                for enemy_car in self.enemy_cars_to_check[:]:  # Iterate over a copy of the list
-                    # Use dispatcher to handle near misses
+                                            return
+
+                # Check for near misses.
+                for enemy_car in self.enemy_cars_to_check[:]:
                     self.interceptor_dispatcher.execute_interceptors(
                         (self.player_car_x, self.player_car_y), enemy_car)
-                    # Check if the enemy car was counted as a near miss
-                    if (enemy_car[0], enemy_car[1]) in self.near_miss_interceptor.counted_vehicles:
+                    if (enemy_car.x, enemy_car.y) in self.near_miss_interceptor.counted_vehicles:
                         self.enemy_cars_to_check.remove(enemy_car)
 
-                # Remove off-screen enemy cars
-                self.enemy_cars[:] = [car for car in self.enemy_cars if car[1] < SCREEN_HEIGHT]
+                # Remove off-screen enemy cars.
+                self.enemy_cars[:] = [car for car in self.enemy_cars if car.y < SCREEN_HEIGHT]
 
-                # Add new enemy cars
+                # Add new enemy cars.
                 if random.randint(1, 20) == 1:
                     new_car = self.create_enemy_car()
-                    self.enemy_cars.append(new_car)
-                    self.enemy_cars_to_check.append(new_car)
+                    if new_car:
+                        self.enemy_cars.append(new_car)
+                        self.enemy_cars_to_check.append(new_car)
 
-                # Move coins
+                # Move coins.
                 for coin in self.coins:
                     coin[1] += ENEMY_CAR_SPEED
                     self.ui.draw_coin(coin[0], coin[1])
-
-                    # Check for coin collection
                     if (self.player_car_y < coin[1] + cd.PLAYER_CAR_HEIGHT.value // 2 and
                         self.player_car_y + cd.PLAYER_CAR_HEIGHT.value > coin[1] and
                         self.player_car_x < coin[0] + cd.PLAYER_CAR_WIDTH.value // 2 and
@@ -206,17 +243,11 @@ class Game:
                         self.coins.remove(coin)
                         self.game_state.add_coin()
 
-                # Remove off-screen coins
                 self.coins[:] = [coin for coin in self.coins if coin[1] < SCREEN_HEIGHT]
-
-                # Add new coins
                 if random.randint(1, 50) == 1:
                     self.coins.append(self.create_coin())
 
-                # Draw coin count
                 self.ui.draw_coin_count(self.game_state.coin_count)
-
-                # Draw near miss count
                 self.ui.draw_near_miss_count(self.near_miss_interceptor.get_near_miss_count())
 
             for event in pygame.event.get():
@@ -230,15 +261,12 @@ class Game:
                 elif event.type == pygame.KEYUP:
                     if event.key in self.commands and self.selected_car:
                         self.commands[event.key].reset()
-    
 
             keys = pygame.key.get_pressed()
             if self.selected_car:
                 for key, command in self.commands.items():
                     if keys[key] and key not in self.car_selection:
-                        print(key)
                         command.execute(self)
-
 
             pygame.display.flip()
             self.clock.tick(60)
@@ -249,7 +277,7 @@ class Game:
         button_width = 200
         button_height = 50
         replay_button_x = SCREEN_WIDTH / 2 - button_width - 10
-        button_y = SCREEN_HEIGHT / 2 + 150  # Adjusted to move up by 20 pixels
+        button_y = SCREEN_HEIGHT / 2 + 150
         return (replay_button_x <= mouse_pos[0] <= replay_button_x + button_width and
                 button_y <= mouse_pos[1] <= button_y + button_height)
 
@@ -257,7 +285,7 @@ class Game:
         button_width = 200
         button_height = 50
         quit_button_x = SCREEN_WIDTH / 2 + 10
-        button_y = SCREEN_HEIGHT / 2 + 150  # Adjusted to move up by 20 pixels
+        button_y = SCREEN_HEIGHT / 2 + 150
         return (quit_button_x <= mouse_pos[0] <= quit_button_x + button_width and
                 button_y <= mouse_pos[1] <= button_y + button_height)
 
@@ -268,8 +296,6 @@ class Game:
         self.enemy_cars = []
         self.coins = []
         self.road_offset = 0
-        self.near_miss_interceptor.near_miss_count = 0  # Reset near miss count
-        self.game_state.coin_count = 0  # Reset coin count
-        # Set flag to prompt for name entry again
+        self.near_miss_interceptor.near_miss_count = 0
+        self.game_state.coin_count = 0
         self.game_state.is_running = True
-        name_entered = False  # Reset name entry flag
