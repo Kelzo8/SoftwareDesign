@@ -25,3 +25,12 @@ class Lambo(Car):
         return "Driving a lambo"
     def get_image(self):
         return "assets/lambo.png"
+    
+class Enemy(Car):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    def drive(self):
+        return "I am an enemy"
+    def get_image(self):
+        return "assets/enemy.png"

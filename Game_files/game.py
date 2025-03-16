@@ -94,9 +94,10 @@ class Game:
             lane = random.randint(0, NUM_LANES - 1)
             x = lane * LANE_WIDTH + (LANE_WIDTH - cd.ENEMY_CAR_WIDTH.value) // 2
             y = -cd.ENEMY_CAR_HEIGHT.value
+            enemy_car = CarFactory.create_car("enemy", x, y)
             # Check for overlap with coins
             if not any(abs(x - coin[0]) < cd.ENEMY_CAR_WIDTH.value and abs(y - coin[1]) < cd.ENEMY_CAR_HEIGHT.value for coin in self.coins):
-                return [x, y]
+                return enemy_car
 
     def create_coin(self):
         while True:
@@ -104,7 +105,7 @@ class Game:
             x = lane * LANE_WIDTH + (LANE_WIDTH - cd.PLAYER_CAR_WIDTH.value  ) // 2
             y = -cd.PLAYER_CAR_HEIGHT.value
             # Check for overlap with enemy cars
-            if not any(abs(x - enemy_car[0]) < cd.PLAYER_CAR_WIDTH.value and abs(y - enemy_car[1]) < cd.PLAYER_CAR_HEIGHT.value for enemy_car in self.enemy_cars):
+            if not any(abs(x - enemy_car.x) < cd.PLAYER_CAR_WIDTH.value and abs(y - enemy_car.y) < cd.PLAYER_CAR_HEIGHT.value for enemy_car in self.enemy_cars):
                 return [x, y]
 
     def save_checkpoint(self):
@@ -168,14 +169,14 @@ class Game:
 
                 # Move enemy cars
                 for enemy_car in self.enemy_cars:
-                    enemy_car[1] += ENEMY_CAR_SPEED
-                    self.ui.draw_car(enemy_car[0], enemy_car[1], "enemy")
+                    enemy_car.y += ENEMY_CAR_SPEED
+                    self.ui.draw_car(enemy_car.x, enemy_car.y, enemy_car)
 
                     # Check for collision
-                    if (self.player_car_y < enemy_car[1] + cd.ENEMY_CAR_HEIGHT.value and
-                        self.player_car_y + cd.PLAYER_CAR_HEIGHT.value > enemy_car[1] and
-                        self.player_car_x < enemy_car[0] + cd.ENEMY_CAR_WIDTH.value and
-                        self.player_car_x + cd.PLAYER_CAR_WIDTH.value > enemy_car[0]):
+                    if (self.player_car_y < enemy_car.y + cd.ENEMY_CAR_HEIGHT.value and
+                        self.player_car_y + cd.PLAYER_CAR_HEIGHT.value > enemy_car.y and
+                        self.player_car_x < enemy_car.x + cd.ENEMY_CAR_WIDTH.value and
+                        self.player_car_x + cd.PLAYER_CAR_WIDTH.value > enemy_car.x):
 
                         if not self.load_checkpoint():
                             self.game_state.stop_game()
@@ -199,13 +200,13 @@ class Game:
                 for enemy_car in self.enemy_cars_to_check[:]:  # Iterate over a copy of the list
                     # Use dispatcher to handle near misses
                     self.interceptor_dispatcher.execute_interceptors(
-                        (self.player_car_x, self.player_car_y), enemy_car)
+                        (self.player_car_x, self.player_car_y), (enemy_car.x, enemy_car.y))
                     # Check if the enemy car was counted as a near miss
-                    if (enemy_car[0], enemy_car[1]) in self.near_miss_interceptor.counted_vehicles:
+                    if (enemy_car.x, enemy_car.y) in self.near_miss_interceptor.counted_vehicles:
                         self.enemy_cars_to_check.remove(enemy_car)
 
                 # Remove off-screen enemy cars
-                self.enemy_cars[:] = [car for car in self.enemy_cars if car[1] < SCREEN_HEIGHT]
+                self.enemy_cars[:] = [car for car in self.enemy_cars if car.y < SCREEN_HEIGHT]
 
                 # Add new enemy cars
                 if random.randint(1, 20) == 1:
