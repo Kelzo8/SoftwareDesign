@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import json
 import os
+from settings import LEADERBOARD_COUNT
 
 class Observer(ABC):
     @abstractmethod
@@ -25,11 +26,11 @@ class Leaderboard(Observer):
     
     def save_scores(self):
         with open('leaderboard.json', 'w') as file:
-            json.dump(self.scores[:5], file)  # Only save top 5
+            json.dump(self.scores[:LEADERBOARD_COUNT], file)  # Only save top 5
     
     def update(self, player_name: str, score: int):
         # Check if new score should be added
-        should_add = len(self.scores) < 5  # Add if we have less than 5 scores
+        should_add = len(self.scores) < LEADERBOARD_COUNT  # Add if we have less than 5 scores
         
         if not should_add:
             # Check if new score is higher than the lowest score
@@ -42,7 +43,7 @@ class Leaderboard(Observer):
             # Sort by score in descending order
             self.scores.sort(key=lambda x: x[1], reverse=True)
             # Keep only top 5
-            self.scores = self.scores[:5]
+            self.scores = self.scores[:LEADERBOARD_COUNT]
             # Save to file
             self.save_scores()
         
