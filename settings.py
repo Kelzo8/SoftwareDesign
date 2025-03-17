@@ -24,10 +24,18 @@ PLAYER_CAR_SPEED = 5
 
 # Enemy car settings
 ENEMY_CAR_SPEED = 5
+NEW_ENEMY_CAR_PROBABILITY = 20
+
+# Coin settings
+NEW_COIN_PROBABILITY = 50
 
 # Road animation settings
 ROAD_LINE_HEIGHT = 20
 ROAD_LINE_GAP = 20
+
+# Checkpoint settings
+CHECKPOINT_COIN_COUNT = 5
+CHECKPOINT_IMMUNE_TIME = 5  # 3 seconds
 
 class CarDimensions(Enum):
     PLAYER_CAR_WIDTH = LANE_WIDTH * 0.8
