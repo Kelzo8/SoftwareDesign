@@ -86,8 +86,8 @@ class Game:
                 return [x, y]
 
     def save_checkpoint(self):
-        if self.game_state.coin_count >= 5:
-            self.game_state.coin_count -= 5
+        if self.game_state.coin_count >= CHECKPOINT_COIN_COUNT:
+            self.game_state.coin_count -= CHECKPOINT_COIN_COUNT
             memento = Memento(self.player_car_x, self.player_car_y, self.game_state.coin_count, self.enemy_cars, self.coins)
             self.caretaker.save_memento(memento)
             print("Checkpoint saved")
@@ -155,7 +155,7 @@ class Game:
                     enemy_car.move(self.player_car_x, self.enemy_cars, self.game_state.coin_count)
                     enemy_car.draw(self.ui)
                     # Collision detection between player's car and enemy car.
-                    if self.checkpoint_loaded_time is None or time.time() - self.checkpoint_loaded_time > 5:
+                    if self.checkpoint_loaded_time is None or time.time() - self.checkpoint_loaded_time > CHECKPOINT_IMMUNE_TIME:
                         if (self.player_car_y < enemy_car.y + cd.ENEMY_CAR_HEIGHT.value and
                             self.player_car_y + cd.PLAYER_CAR_HEIGHT.value > enemy_car.y and
                             self.player_car_x < enemy_car.x + cd.ENEMY_CAR_WIDTH.value and
@@ -180,7 +180,7 @@ class Game:
                                                 waiting_for_input = False
                                                 return
                 if self.checkpoint_loaded_time is not None:
-                    remaining_time = 5 - (time.time() - self.checkpoint_loaded_time)
+                    remaining_time = CHECKPOINT_IMMUNE_TIME - (time.time() - self.checkpoint_loaded_time)
                     if remaining_time > 0:
                         self.ui.draw_immunity_timer(remaining_time)
 
