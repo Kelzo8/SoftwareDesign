@@ -9,6 +9,7 @@ from .interceptor import NearMissInterceptor, InterceptorDispatcher
 from settings import CarDimensions as cd
 from .coin import Coin
 from .strategy import StraightMovement, ZigZagMovement, ChaseMovement
+from .leaderboard import Leaderboard
 
 class Player:
     def __init__(self):
@@ -32,7 +33,10 @@ class GameModel:
         self.interceptor_dispatcher = InterceptorDispatcher()
         self.near_miss_interceptor = NearMissInterceptor()
         self.interceptor_dispatcher.register_interceptor(self.near_miss_interceptor)
+        self.leaderboard = Leaderboard()
+        self.game_state.attach(self.leaderboard)
         self.enemy_cars_to_check = []  # List to track enemy cars for near misses
+        
         self.checkpoint_loaded_time = None
 
     def create_enemy_car(self):
@@ -101,13 +105,3 @@ class GameModel:
             if new_car:
                 self.game_objects.enemy_cars.append(new_car)
                 self.enemy_cars_to_check.append(new_car)
-
-    def move_and_draw_coins(self):
-        for coin in self.game_objects.coins:
-            coin.move(ENEMY_CAR_SPEED)
-            if coin.check_collision(self.player):
-                self.game_objects.coins.remove(coin)
-                self.game_state.add_coin()
-        self.game_objects.coins[:] = [coin for coin in self.game_objects.coins if coin.y < SCREEN_HEIGHT]
-        if random.randint(1, NEW_COIN_PROBABILITY) == 1:
-            self.game_objects.coins.append(self.create_coin())
