@@ -24,6 +24,10 @@ PLAYER_CAR_SPEED = 5
 
 # Enemy car settings
 ENEMY_CAR_SPEED = 5
+NEW_ENEMY_CAR_PROBABILITY = 20
+
+# Coin settings
+NEW_COIN_PROBABILITY = 50
 
 # Road animation settings
 ROAD_LINE_HEIGHT = 20

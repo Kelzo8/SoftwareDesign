@@ -230,7 +230,7 @@ class Game:
         self.game_objects.enemy_cars[:] = [car for car in self.game_objects.enemy_cars if car.y < SCREEN_HEIGHT]
 
     def add_new_enemy_cars(self):
-        if random.randint(1, 20) == 1:
+        if random.randint(1, NEW_ENEMY_CAR_PROBABILITY) == 1:
             new_car = self.create_enemy_car()
             if new_car:
                 self.game_objects.enemy_cars.append(new_car)
@@ -244,7 +244,7 @@ class Game:
                 self.game_objects.coins.remove(coin)
                 self.game_state.add_coin()
         self.game_objects.coins[:] = [coin for coin in self.game_objects.coins if coin[1] < SCREEN_HEIGHT]
-        if random.randint(1, 50) == 1:
+        if random.randint(1, NEW_COIN_PROBABILITY) == 1:
             self.game_objects.coins.append(self.create_coin())
 
     def check_coin_collision(self, coin):
