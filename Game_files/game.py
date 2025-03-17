@@ -13,6 +13,7 @@ import pygame.locals
 from .UI import UI
 from .interceptor import NearMissInterceptor, InterceptorDispatcher
 from settings import CarDimensions as cd
+from .coin import Coin  # Import the Coin class
 # Import the strategy pattern classes
 from .strategy import StraightMovement, ZigZagMovement, ChaseMovement
 
@@ -94,7 +95,7 @@ class Game:
             x = lane * LANE_WIDTH + (LANE_WIDTH - cd.PLAYER_CAR_WIDTH.value) // 2
             y = -cd.PLAYER_CAR_HEIGHT.value
             if not self.is_coin_overlap(x, y):
-                return [x, y]
+                return Coin(x, y)
 
     def is_coin_overlap(self, x, y):
         return any(abs(x - enemy_car.x) < cd.PLAYER_CAR_WIDTH.value and abs(y - enemy_car.y) < cd.PLAYER_CAR_HEIGHT.value for enemy_car in self.game_objects.enemy_cars)
@@ -119,7 +120,6 @@ class Game:
 
         while not name_entered and self.game_state.is_running:
             self.ui.draw_name_input(self.player.name)
-            # print("Player name: ", player_name)
             name_entered = self.handle_name_input()
             pygame.display.flip()
             self.clock.tick(60)
@@ -238,20 +238,14 @@ class Game:
 
     def move_and_draw_coins(self):
         for coin in self.game_objects.coins:
-            coin[1] += ENEMY_CAR_SPEED
-            self.ui.draw_coin(coin[0], coin[1])
-            if self.check_coin_collision(coin):
+            coin.move(ENEMY_CAR_SPEED)
+            coin.draw(self.ui)
+            if coin.check_collision(self.player):
                 self.game_objects.coins.remove(coin)
                 self.game_state.add_coin()
-        self.game_objects.coins[:] = [coin for coin in self.game_objects.coins if coin[1] < SCREEN_HEIGHT]
+        self.game_objects.coins[:] = [coin for coin in self.game_objects.coins if coin.y < SCREEN_HEIGHT]
         if random.randint(1, NEW_COIN_PROBABILITY) == 1:
             self.game_objects.coins.append(self.create_coin())
-
-    def check_coin_collision(self, coin):
-        return (self.player.car_y < coin[1] + cd.PLAYER_CAR_HEIGHT.value // 2 and
-                self.player.car_y + cd.PLAYER_CAR_HEIGHT.value > coin[1] and
-                self.player.car_x < coin[0] + cd.PLAYER_CAR_WIDTH.value // 2 and
-                self.player.car_x + cd.PLAYER_CAR_WIDTH.value > coin[0])
 
     def handle_events(self):
         for event in pygame.event.get():
