@@ -158,7 +158,7 @@ class UI:
             self.screen.blit(key_text, key_rect)
 
     def handle_car_selection_click(self, mouse_pos):
-        cars = ["ferrari", "porsche", "lambo"]
+        cars = ["ferrari", "lambo", "porsche"]
         box_width = 220
         box_height = 180
         margin = 20
@@ -274,6 +274,19 @@ class UI:
         x_position = SCREEN_WIDTH - box_width - padding  # Adjusted position
         y_position = padding
         
+        pygame.draw.rect(self.screen, WHITE, [x_position, y_position, box_width, box_height])
+        pygame.draw.rect(self.screen, BLACK, [x_position, y_position, box_width, box_height], 2)
+        self.screen.blit(text_surface, (x_position + padding, y_position + padding))
+    
+    def draw_immunity_timer(self, remaining_time):
+        timer_text = f"Immunity: {remaining_time:.1f}s"
+        text_surface = self.font.render(timer_text, True, (255, 0, 0))  # Red color for visibility
+        text_width, text_height = text_surface.get_size()
+        padding = 10
+        box_width = text_width + 2 * padding
+        box_height = text_height + 2 * padding
+        x_position = (SCREEN_WIDTH - box_width) / 2  # Centered position
+        y_position = padding
         pygame.draw.rect(self.screen, WHITE, [x_position, y_position, box_width, box_height])
         pygame.draw.rect(self.screen, BLACK, [x_position, y_position, box_width, box_height], 2)
         self.screen.blit(text_surface, (x_position + padding, y_position + padding))
