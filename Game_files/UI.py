@@ -13,10 +13,10 @@ class UI:
         text_surface = self.font.render(text, True, BLACK)
         self.screen.blit(text_surface, (x, y))
 
-    def draw_car(self, x, y, car_type):
-        color_map = {"ferrari": RED, "lambo": GREEN, "porsche": BLUE, "enemy": BLACK}
-        color = color_map.get(car_type, BLACK)
-        pygame.draw.rect(self.screen, color, [x, y, cd.PLAYER_CAR_WIDTH.value, cd.PLAYER_CAR_HEIGHT.value])
+    def draw_car(self, x, y, car):
+        car_image = pygame.image.load(car.get_image()).convert_alpha()
+        car_image = pygame.transform.scale(car_image, (cd.PLAYER_CAR_WIDTH.value, cd.PLAYER_CAR_HEIGHT.value))
+        self.screen.blit(car_image, (x, y))
 
     def draw_road(self, road_offset):
         self.screen.fill(GREY)
@@ -158,7 +158,7 @@ class UI:
             self.screen.blit(key_text, key_rect)
 
     def handle_car_selection_click(self, mouse_pos):
-        cars = ["ferrari", "porsche", "lambo"]
+        cars = ["ferrari", "lambo", "porsche"]
         box_width = 220
         box_height = 180
         margin = 20
@@ -274,6 +274,19 @@ class UI:
         x_position = SCREEN_WIDTH - box_width - padding  # Adjusted position
         y_position = padding
         
+        pygame.draw.rect(self.screen, WHITE, [x_position, y_position, box_width, box_height])
+        pygame.draw.rect(self.screen, BLACK, [x_position, y_position, box_width, box_height], 2)
+        self.screen.blit(text_surface, (x_position + padding, y_position + padding))
+    
+    def draw_immunity_timer(self, remaining_time):
+        timer_text = f"Immunity: {remaining_time:.1f}s"
+        text_surface = self.font.render(timer_text, True, (255, 0, 0))  # Red color for visibility
+        text_width, text_height = text_surface.get_size()
+        padding = 10
+        box_width = text_width + 2 * padding
+        box_height = text_height + 2 * padding
+        x_position = (SCREEN_WIDTH - box_width) / 2  # Centered position
+        y_position = padding
         pygame.draw.rect(self.screen, WHITE, [x_position, y_position, box_width, box_height])
         pygame.draw.rect(self.screen, BLACK, [x_position, y_position, box_width, box_height], 2)
         self.screen.blit(text_surface, (x_position + padding, y_position + padding))

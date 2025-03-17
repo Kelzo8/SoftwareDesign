@@ -56,17 +56,3 @@ class ChaseMovement(MovementStrategy):
                     ):
                         # Gradually adjust the car's x position.
                         car.x += (target_x - car.x) * 0.25  # Reduced from 0.5 to 0.25.
-
-class EnemyCar:
-    def __init__(self, x, y, speed, strategy, car_type='enemy'):
-        self.x = x
-        self.y = y
-        self.speed = speed
-        self.strategy = strategy
-        self.car_type = car_type
-
-    def move(self, player_x, enemy_cars, coin_count):
-        self.strategy.move(self, player_x, enemy_cars, coin_count)
-
-    def draw(self, ui):
-        ui.draw_car(self.x, self.y, self.car_type)

@@ -8,38 +8,43 @@ PLAYER_CAR_HEIGHT = CarDimensions.PLAYER_CAR_HEIGHT.value
 
 class Command(ABC):
     @abstractmethod
-    def execute(self, game):
+    def execute(self, **params):
         pass
     def reset(self):
         pass
 
 class MoveLeftCommand(Command):
-    def execute(self, game):
-        if game.player_car_x > 0:
-            game.player_car_x -= PLAYER_CAR_SPEED  # Define PLAYER_CAR_SPEED in settings.py
+    def execute(self, **params):
+        player = params.get('player')
+        if player.car_x > 0:
+            player.car_x -= PLAYER_CAR_SPEED  # Define PLAYER_CAR_SPEED in settings.py
 
 class MoveRightCommand(Command):
-    def execute(self, game):
-        if game.player_car_x < SCREEN_WIDTH - PLAYER_CAR_WIDTH:
-            game.player_car_x += PLAYER_CAR_SPEED
+    def execute(self, **params):
+        player = params.get('player')
+        if player.car_x < SCREEN_WIDTH - PLAYER_CAR_WIDTH:
+            player.car_x += PLAYER_CAR_SPEED
 
 class MoveUpCommand(Command):
-    def execute(self, game):
-        if game.player_car_y > 0:
-            game.player_car_y -= PLAYER_CAR_SPEED
+    def execute(self, **params):
+        player = params.get('player')
+        if player.car_y > 0:
+            player.car_y -= PLAYER_CAR_SPEED
 
 class MoveDownCommand(Command):
-    def execute(self, game):
-        if game.player_car_y < SCREEN_HEIGHT - PLAYER_CAR_HEIGHT:
-            game.player_car_y += PLAYER_CAR_SPEED
+    def execute(self, **params):
+        player = params.get('player')
+        if player.car_y < SCREEN_HEIGHT - PLAYER_CAR_HEIGHT:
+            player.car_y += PLAYER_CAR_SPEED
 
 class CheckPointCommand(Command):
     def __init__(self):
         self.key_pressed = False
 
-    def execute(self, game):
+    def execute(self, **params):
+        model = params.get('model')
         if not self.key_pressed:
-            game.save_checkpoint()
+            model.save_checkpoint()
             self.key_pressed = True
 
     def reset(self):
