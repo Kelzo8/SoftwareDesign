@@ -42,9 +42,9 @@ class CheckPointCommand(Command):
         self.key_pressed = False
 
     def execute(self, **params):
-        game = params.get('game')
+        model = params.get('model')
         if not self.key_pressed:
-            game.save_checkpoint()
+            model.save_checkpoint()
             self.key_pressed = True
 
     def reset(self):
