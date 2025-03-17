@@ -104,7 +104,7 @@ class GameController:
                     waiting_for_input = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if self.is_replay_button_clicked(event.pos):
-                        self.reset_game()
+                        self.model.reset_game()
                         waiting_for_input = False
                     elif self.is_quit_button_clicked(event.pos):
                         self.model.game_state.stop_game()
@@ -137,17 +137,6 @@ class GameController:
         button_y = SCREEN_HEIGHT / 2 + 150
         return (quit_button_x <= mouse_pos[0] <= quit_button_x + button_width and
                 button_y <= mouse_pos[1] <= button_y + button_height)
-
-    def reset_game(self):
-        self.model.player.selected_car = None
-        self.model.player.car_x = SCREEN_WIDTH // 2 - cd.PLAYER_CAR_WIDTH.value // 2
-        self.model.player.car_y = SCREEN_HEIGHT - cd.PLAYER_CAR_HEIGHT.value - 10
-        self.model.game_objects.enemy_cars = []
-        self.model.game_objects.coins = []
-        self.model.game_objects.road_offset = 0
-        self.model.near_miss_interceptor.near_miss_count = 0
-        self.model.game_state.coin_count = 0
-        self.model.game_state.is_running = True
         
     def update_game_state(self):
         self.model.check_near_misses()

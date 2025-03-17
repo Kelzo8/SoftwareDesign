@@ -105,3 +105,14 @@ class GameModel:
             if new_car:
                 self.game_objects.enemy_cars.append(new_car)
                 self.enemy_cars_to_check.append(new_car)
+    
+    def reset_game(self):
+        self.player.selected_car = None
+        self.player.car_x = SCREEN_WIDTH // 2 - cd.PLAYER_CAR_WIDTH.value // 2
+        self.player.car_y = SCREEN_HEIGHT - cd.PLAYER_CAR_HEIGHT.value - 10
+        self.game_objects.enemy_cars = []
+        self.game_objects.coins = []
+        self.game_objects.road_offset = 0
+        self.near_miss_interceptor.near_miss_count = 0
+        self.game_state.coin_count = 0
+        self.game_state.is_running = True
