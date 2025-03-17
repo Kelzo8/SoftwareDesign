@@ -30,7 +30,6 @@ class TestGameModel(unittest.TestCase):
 
     def test_load_checkpoint(self):
         self.model.game_state.coin_count = 10
-        print(type(self.model))
         self.model.save_checkpoint()
         self.model.player.car_x = 0
         self.model.load_checkpoint()
@@ -41,6 +40,16 @@ class TestGameModel(unittest.TestCase):
         immunity_active, remaining_time = self.model.is_immunity_active()
         self.assertTrue(immunity_active)
         self.assertGreater(remaining_time, 0)
+
+    def test_remove_off_screen_enemy_cars(self):
+        self.model.game_objects.enemy_cars.append(CarFactory.create_car(car_type='enemy', x=100, y=SCREEN_HEIGHT + 10, speed=5, strategy=None))
+        self.model.remove_off_screen_enemy_cars()
+        self.assertEqual(len(self.model.game_objects.enemy_cars), 0)
+
+    def test_add_new_enemy_cars(self):
+        initial_count = len(self.model.game_objects.enemy_cars)
+        self.model.add_new_enemy_cars()
+        self.assertGreaterEqual(len(self.model.game_objects.enemy_cars), initial_count)
 
 if __name__ == '__main__':
     unittest.main()

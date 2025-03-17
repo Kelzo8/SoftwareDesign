@@ -19,5 +19,9 @@ class TestCarFactory(unittest.TestCase):
         car = CarFactory.create_car(car_type="enemy", x=0, y=0, speed=5, strategy=None)
         self.assertIsInstance(car, Enemy)
 
+    def test_create_unknown_car(self):
+        with self.assertRaises(ValueError):
+            CarFactory.create_car(car_type="unknown")
+
 if __name__ == '__main__':
     unittest.main()

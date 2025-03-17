@@ -2,6 +2,7 @@ import unittest
 from Game_files.command import MoveLeftCommand, MoveRightCommand, MoveUpCommand, MoveDownCommand, CheckPointCommand
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_CAR_SPEED, CarDimensions as cd
 from Game_files.model import GameModel
+
 class MockPlayer:
     def __init__(self):
         self.car_x = SCREEN_WIDTH // 2
@@ -46,10 +47,15 @@ class TestCommands(unittest.TestCase):
         self.assertEqual(self.player.car_y, SCREEN_HEIGHT // 2 + PLAYER_CAR_SPEED)
 
     def test_checkpoint_command(self):
-        
         command = CheckPointCommand()
         command.execute(model=self.model)
         self.assertEqual(self.model.game_state.coin_count, 5)
+
+    def test_checkpoint_command_reset(self):
+        command = CheckPointCommand()
+        command.execute(model=self.model)
+        command.reset()
+        self.assertFalse(command.key_pressed)
 
 if __name__ == '__main__':
     unittest.main()

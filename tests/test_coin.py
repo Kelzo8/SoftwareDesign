@@ -20,5 +20,16 @@ class TestCoin(unittest.TestCase):
         player.car_x = 200
         self.assertFalse(self.coin.check_collision(player))
 
+    def test_draw(self):
+        class MockUI:
+            def draw_coin(self, x, y):
+                self.x = x
+                self.y = y
+
+        ui = MockUI()
+        self.coin.draw(ui)
+        self.assertEqual(ui.x, 100)
+        self.assertEqual(ui.y, 100)
+
 if __name__ == '__main__':
     unittest.main()
